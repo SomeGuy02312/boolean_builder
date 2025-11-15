@@ -11,6 +11,8 @@ import {
 } from "@dnd-kit/sortable";
 import BucketCard from "./BucketCard";
 
+const END_DROP_PREFIX = "term-drop-end::";
+
 type BucketsPanelProps = {
   buckets: Bucket[];
   handleAddBucket: () => void;
@@ -21,29 +23,96 @@ type BucketsPanelProps = {
   handleOperatorChange: (bucketId: string, operator: Operator) => void;
   handleReorderBuckets: (orderedIds: string[]) => void;
   handleDeleteBucket: (id: string) => void;
+  onMoveTerm: (
+    sourceBucketId: string,
+    sourceIndex: number,
+    targetBucketId: string,
+    targetIndex: number
+  ) => void;
 };
 
-const BucketsPanel = ({
-  buckets,
-  handleAddBucket,
-  handleBucketNameChange,
-  handleToggleBucket,
-  handleRemoveTerm,
-  handleAddTerm,
-  handleOperatorChange,
-  handleReorderBuckets,
-  handleDeleteBucket,
-}: BucketsPanelProps) => {
+const BucketsPanel = (props: BucketsPanelProps) => {
+  const {
+    buckets,
+    handleAddBucket,
+    handleBucketNameChange,
+    handleToggleBucket,
+    handleRemoveTerm,
+    handleAddTerm,
+    handleOperatorChange,
+    handleReorderBuckets,
+    handleDeleteBucket,
+    onMoveTerm,
+  } = props;
+
+  const findTermLocation = (termId: string) => {
+    for (const bucket of buckets) {
+      const termIndex = bucket.terms.findIndex((term) => term.id === termId);
+      if (termIndex !== -1) {
+        return { bucketId: bucket.id, index: termIndex };
+      }
+    }
+    return null;
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    if (!over || active.id === over.id) return;
+    const activeId = String(active.id);
 
-    const oldIndex = buckets.findIndex((b) => b.id === active.id);
-    const newIndex = buckets.findIndex((b) => b.id === over.id);
-    if (oldIndex === -1 || newIndex === -1) return;
+    const bucketIndex = buckets.findIndex((b) => b.id === activeId);
+    if (bucketIndex !== -1) {
+      if (!over || active.id === over.id) return;
+      const overIndex = buckets.findIndex((b) => b.id === over.id);
+      if (overIndex === -1) return;
 
-    const newOrder = arrayMove(buckets, oldIndex, newIndex).map((b) => b.id);
-    handleReorderBuckets(newOrder);
+      const newOrder = arrayMove(buckets, bucketIndex, overIndex).map(
+        (b) => b.id
+      );
+      handleReorderBuckets(newOrder);
+      return;
+    }
+
+    const sourceLocation = findTermLocation(activeId);
+    if (!sourceLocation || !over) return;
+
+    const overId = String(over.id);
+    const targetTermLocation = findTermLocation(overId);
+
+    if (targetTermLocation) {
+      onMoveTerm(
+        sourceLocation.bucketId,
+        sourceLocation.index,
+        targetTermLocation.bucketId,
+        targetTermLocation.index
+      );
+      return;
+    }
+
+    if (overId.startsWith(END_DROP_PREFIX)) {
+      const targetBucketId = overId.slice(END_DROP_PREFIX.length);
+      const targetBucket = buckets.find((bucket) => bucket.id === targetBucketId);
+      if (!targetBucket) return;
+
+      onMoveTerm(
+        sourceLocation.bucketId,
+        sourceLocation.index,
+        targetBucket.id,
+        targetBucket.terms.length
+      );
+      return;
+    }
+
+    const targetBucket = buckets.find((bucket) => bucket.id === overId);
+    if (!targetBucket) return;
+
+    if (targetBucket.terms.length === 0) {
+      onMoveTerm(
+        sourceLocation.bucketId,
+        sourceLocation.index,
+        targetBucket.id,
+        0
+      );
+    }
   };
 
   return (

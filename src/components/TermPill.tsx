@@ -1,3 +1,5 @@
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import type { TermColorKey } from "../lib/types";
 
 const TERM_COLOR_CLASSES: Record<TermColorKey, string> = {
@@ -14,17 +16,30 @@ const TERM_COLOR_CLASSES: Record<TermColorKey, string> = {
 };
 
 type TermPillProps = {
+  id: string;
   term: string;
   colorKey: TermColorKey;
   onRemove: () => void;
 };
 
-const TermPill = ({ term, colorKey, onRemove }: TermPillProps) => {
+const TermPill = ({ id, term, colorKey, onRemove }: TermPillProps) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id });
+
   const colorClass = TERM_COLOR_CLASSES[colorKey];
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.85 : 1,
+  };
 
   return (
     <span
+      ref={setNodeRef}
+      style={style}
       className={`inline-flex items-center gap-1 rounded-pill px-2.5 py-1 text-xs shadow-pill ${colorClass}`}
+      {...attributes}
+      {...listeners}
     >
       {term}
       <button

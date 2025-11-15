@@ -1,4 +1,9 @@
-import { useSortable } from "@dnd-kit/sortable";
+import { useDroppable } from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Bucket, Operator } from "../lib/types";
 import TermPill from "./TermPill";
@@ -30,6 +35,10 @@ const BucketCard = ({
 }: BucketCardProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: bucket.id });
+  const endDropId = `term-drop-end::${bucket.id}`;
+  const { setNodeRef: setEndDropRef } = useDroppable({
+    id: endDropId,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -75,19 +84,29 @@ const BucketCard = ({
       </div>
 
       {/* Terms */}
-      <div className="flex flex-wrap gap-2">
-        {bucket.terms.map((term, i) => (
-          <TermPill
-            key={term.id}
-            term={term.value}
-            colorKey={term.colorKey}
-            onRemove={() => onRemoveTerm(bucket.id, i)}
+      <SortableContext
+        items={bucket.terms.map((term) => term.id)}
+        strategy={verticalListSortingStrategy}
+      >
+        <div className="flex flex-wrap gap-2">
+          {bucket.terms.map((term, i) => (
+            <TermPill
+              key={term.id}
+              id={term.id}
+              term={term.value}
+              colorKey={term.colorKey}
+              onRemove={() => onRemoveTerm(bucket.id, i)}
+            />
+          ))}
+          {bucket.terms.length === 0 && (
+            <span className="text-xs text-slate-400">No terms yet</span>
+          )}
+          <div
+            ref={setEndDropRef}
+            className="inline-flex h-6 w-12 rounded-full border border-transparent"
           />
-        ))}
-        {bucket.terms.length === 0 && (
-          <span className="text-xs text-slate-400">No terms yet</span>
-        )}
-      </div>
+        </div>
+      </SortableContext>
 
       {/* Add term input */}
       <input

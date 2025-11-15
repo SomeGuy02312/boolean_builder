@@ -204,6 +204,76 @@ function App() {
     );
   };
 
+  const handleMoveTerm = (
+    sourceBucketId: string,
+    sourceIndex: number,
+    targetBucketId: string,
+    targetIndex: number
+  ) => {
+    updateBuckets((prev) => {
+      const sourceBucketIndex = prev.findIndex(
+        (b) => b.id === sourceBucketId
+      );
+      const targetBucketIndex = prev.findIndex(
+        (b) => b.id === targetBucketId
+      );
+
+      if (sourceBucketIndex === -1 || targetBucketIndex === -1) {
+        return prev;
+      }
+
+      const sourceBucket = prev[sourceBucketIndex];
+      if (
+        sourceIndex < 0 ||
+        sourceIndex >= sourceBucket.terms.length
+      ) {
+        return prev;
+      }
+
+      const termToMove = sourceBucket.terms[sourceIndex];
+
+      if (sourceBucketId === targetBucketId) {
+        const updatedTerms = [...sourceBucket.terms];
+        updatedTerms.splice(sourceIndex, 1);
+        const clampedIndex = Math.max(
+          0,
+          Math.min(targetIndex, updatedTerms.length)
+        );
+        updatedTerms.splice(clampedIndex, 0, termToMove);
+
+        const updatedBucket = { ...sourceBucket, terms: updatedTerms };
+        return prev.map((bucket, idx) =>
+          idx === sourceBucketIndex ? updatedBucket : bucket
+        );
+      }
+
+      const updatedSourceTerms = [...sourceBucket.terms];
+      updatedSourceTerms.splice(sourceIndex, 1);
+      const updatedSourceBucket = {
+        ...sourceBucket,
+        terms: updatedSourceTerms,
+      };
+
+      const targetBucket = prev[targetBucketIndex];
+      const clampedTargetIndex = Math.max(
+        0,
+        Math.min(targetIndex, targetBucket.terms.length)
+      );
+      const updatedTargetTerms = [...targetBucket.terms];
+      updatedTargetTerms.splice(clampedTargetIndex, 0, termToMove);
+      const updatedTargetBucket = {
+        ...targetBucket,
+        terms: updatedTargetTerms,
+      };
+
+      return prev.map((bucket, idx) => {
+        if (idx === sourceBucketIndex) return updatedSourceBucket;
+        if (idx === targetBucketIndex) return updatedTargetBucket;
+        return bucket;
+      });
+    });
+  };
+
   const handleOperatorChange = (bucketId: string, operator: Operator) => {
     updateBuckets((prev) =>
       prev.map((b) =>
@@ -312,6 +382,7 @@ function App() {
               handleOperatorChange={handleOperatorChange}
               handleReorderBuckets={handleReorderBuckets}
               handleDeleteBucket={handleDeleteBucket}
+              onMoveTerm={handleMoveTerm}
             />
 
             {/* Right: Boolean preview */}
