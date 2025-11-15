@@ -2,10 +2,28 @@
 
 export type Operator = "AND" | "OR" | "AND NOT";
 
+export type TermColorKey =
+  | "lavender"
+  | "blue"
+  | "mint"
+  | "cyan"
+  | "teal"
+  | "yellow"
+  | "orange"
+  | "red"
+  | "pink"
+  | "violet";
+
+export interface Term {
+  id: string;
+  value: string;
+  colorKey: TermColorKey;
+}
+
 export type Bucket = {
   id: string;
   name: string;
-  terms: string[];
+  terms: Term[];
   isEnabled: boolean;
   /** Operator between this bucket and the NEXT one */
   operatorAfter: Operator;

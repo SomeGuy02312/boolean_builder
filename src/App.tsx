@@ -1,7 +1,14 @@
 // src/App.tsx
 
 import { useEffect, useState } from "react";
-import type { Bucket, OutputMode, AppState, Operator } from "./lib/types";
+import type {
+  Bucket,
+  OutputMode,
+  AppState,
+  Operator,
+  Term,
+  TermColorKey,
+} from "./lib/types";
 import { buildBoolean } from "./lib/booleanBuilder";
 import confetti from "canvas-confetti";
 import HeaderBar from "./components/HeaderBar";
@@ -10,6 +17,63 @@ import BooleanPreview from "./components/BooleanPreview";
 
 
 const STORAGE_KEY = "boolean-builder-state-v1";
+
+const TERM_COLORS: TermColorKey[] = [
+  "lavender",
+  "blue",
+  "mint",
+  "cyan",
+  "teal",
+  "yellow",
+  "orange",
+  "red",
+  "pink",
+  "violet",
+];
+
+let termIdCounter = 0;
+const generateTermId = () => `term-${Date.now()}-${termIdCounter++}`;
+
+const pickTermColor = (termCount: number): TermColorKey =>
+  TERM_COLORS[termCount % TERM_COLORS.length];
+
+type PersistedBucket = Omit<Bucket, "terms"> & {
+  terms: Array<Term | string | null | undefined>;
+};
+
+const normalizeTerm = (
+  term: Term | string | null | undefined,
+  index: number
+): Term => {
+  if (
+    term &&
+    typeof term === "object" &&
+    "id" in term &&
+    "value" in term &&
+    "colorKey" in term &&
+    typeof term.id === "string" &&
+    typeof term.value === "string" &&
+    typeof term.colorKey === "string"
+  ) {
+    return term as Term;
+  }
+
+  const value = typeof term === "string" ? term : "";
+
+  return {
+    id: generateTermId(),
+    value,
+    colorKey: pickTermColor(index),
+  };
+};
+
+const normalizeBuckets = (rawBuckets: PersistedBucket[]): Bucket[] =>
+  rawBuckets.map((bucket) => ({
+    ...bucket,
+    terms: bucket.terms
+      .map((term, index) => normalizeTerm(term, index))
+      .filter((term) => Boolean(term.value)),
+  }));
 
 const DEFAULT_BUCKETS: Bucket[] = [
   {
@@ -38,8 +102,14 @@ function loadInitialState(): { buckets: Bucket[]; outputMode: OutputMode } {
     const mode: OutputMode =
       parsed.outputMode === "minified" ? "minified" : "pretty";
 
+    const persistedBuckets = parsed.buckets as PersistedBucket[];
+
+    const normalizedBuckets = persistedBuckets.length
+      ? normalizeBuckets(persistedBuckets)
+      : DEFAULT_BUCKETS;
+
     return {
-      buckets: parsed.buckets.length ? parsed.buckets : DEFAULT_BUCKETS,
+      buckets: normalizedBuckets,
       outputMode: mode,
     };
   } catch {
@@ -101,17 +171,23 @@ function App() {
     if (!trimmed) return;
 
     updateBuckets((prev) =>
-      prev.map((b) =>
-        b.id === id
-          ? {
-              ...b,
-              // de-dupe within bucket
-              terms: b.terms.includes(trimmed)
-                ? b.terms
-                : [...b.terms, trimmed],
-            }
-          : b
-      )
+      prev.map((b) => {
+        if (b.id !== id) return b;
+
+        const alreadyExists = b.terms.some((t) => t.value === trimmed);
+        if (alreadyExists) return b;
+
+        const newTerm: Term = {
+          id: generateTermId(),
+          value: trimmed,
+          colorKey: pickTermColor(b.terms.length),
+        };
+
+        return {
+          ...b,
+          terms: [...b.terms, newTerm],
+        };
+      })
     );
   };
 
@@ -216,13 +292,6 @@ function App() {
   };
 
 
-  // Color cycling for pills
-  const pillColorClasses = [
-    "bg-pill-lavender text-slate-800",
-    "bg-pill-blue text-slate-800",
-    "bg-pill-mint text-slate-800",
-  ];
-
   return (
     <div className="min-h-screen bg-app text-slate-900">
       <div className="max-w-6xl mx-auto py-8 px-4">
@@ -235,7 +304,6 @@ function App() {
             {/* Left: Buckets */}
             <BucketsPanel
               buckets={buckets}
-              pillColorClasses={pillColorClasses}
               handleAddBucket={handleAddBucket}
               handleBucketNameChange={handleBucketNameChange}
               handleToggleBucket={handleToggleBucket}

@@ -43,7 +43,7 @@ export function buildBoolean(
   // Build each bucket's group: (term1 OR term2 OR "multi word")
   const groups = activeBuckets.map((bucket) => {
     const formattedTerms = bucket.terms
-      .map(formatTerm)
+      .map((term) => formatTerm(term.value))
       .filter(Boolean);
 
     if (formattedTerms.length === 0) return "";

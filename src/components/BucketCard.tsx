@@ -7,7 +7,6 @@ type BucketCardProps = {
   bucket: Bucket;
   index: number;
   isLast: boolean;
-  pillColorClasses: string[];
   onNameChange: (id: string, name: string) => void;
   onToggle: (id: string) => void;
   onAddTerm: (bucketId: string, term: string) => void;
@@ -21,7 +20,6 @@ const BucketCard = ({
   bucket,
   index,
   isLast,
-  pillColorClasses,
   onNameChange,
   onToggle,
   onAddTerm,
@@ -80,9 +78,9 @@ const BucketCard = ({
       <div className="flex flex-wrap gap-2">
         {bucket.terms.map((term, i) => (
           <TermPill
-            key={`${bucket.id}-term-${i}`}
-            term={term}
-            colorClass={pillColorClasses[i % pillColorClasses.length]}
+            key={term.id}
+            term={term.value}
+            colorKey={term.colorKey}
             onRemove={() => onRemoveTerm(bucket.id, i)}
           />
         ))}

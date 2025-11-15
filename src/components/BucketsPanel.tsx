@@ -13,7 +13,6 @@ import BucketCard from "./BucketCard";
 
 type BucketsPanelProps = {
   buckets: Bucket[];
-  pillColorClasses: string[];
   handleAddBucket: () => void;
   handleBucketNameChange: (id: string, name: string) => void;
   handleToggleBucket: (id: string) => void;
@@ -26,7 +25,6 @@ type BucketsPanelProps = {
 
 const BucketsPanel = ({
   buckets,
-  pillColorClasses,
   handleAddBucket,
   handleBucketNameChange,
   handleToggleBucket,
@@ -74,7 +72,6 @@ const BucketsPanel = ({
                 bucket={bucket}
                 index={index}
                 isLast={index === buckets.length - 1}
-                pillColorClasses={pillColorClasses}
                 onNameChange={handleBucketNameChange}
                 onToggle={handleToggleBucket}
                 onAddTerm={handleAddTerm}
