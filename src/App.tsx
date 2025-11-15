@@ -136,6 +136,44 @@ function App() {
     );
   };
 
+  const handleReorderBuckets = (orderedIds: string[]) => {
+    updateBuckets((prev) => {
+      const idToBucket = new Map(prev.map((b) => [b.id, b]));
+      const reordered: Bucket[] = [];
+
+      for (const id of orderedIds) {
+        const bucket = idToBucket.get(id);
+        if (bucket) reordered.push(bucket);
+      }
+
+      // In case something went weird, fall back
+      if (!reordered.length) return prev;
+
+      return reordered;
+    });
+  };
+
+  const handleDeleteBucket = (id: string) => {
+    updateBuckets((prev) => {
+      const filtered = prev.filter((b) => b.id !== id);
+
+      // If deleting would leave us with no buckets, create a fresh empty one
+      if (filtered.length === 0) {
+        return [
+          {
+            id: "bucket-1",
+            name: "Bucket 1",
+            terms: [],
+            isEnabled: true,
+            operatorAfter: "AND",
+          },
+        ];
+      }
+
+      return filtered;
+    });
+  };
+
   const handleAddBucket = () => {
     updateBuckets((prev) => {
       if (prev.length >= 8) return prev; // max buckets
@@ -204,6 +242,8 @@ function App() {
               handleRemoveTerm={handleRemoveTerm}
               handleAddTerm={handleAddTerm}
               handleOperatorChange={handleOperatorChange}
+              handleReorderBuckets={handleReorderBuckets}
+              handleDeleteBucket={handleDeleteBucket}
             />
 
             {/* Right: Boolean preview */}

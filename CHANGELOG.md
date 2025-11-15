@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.2.0] - 2025-02-14
+### Added
+- Component refactor: HeaderBar, BucketsPanel, BucketCard, TermPill, BooleanPreview.
+- UI polish: panel background, vertical divider, multicolored term pills.
+- Added purple squirrel branding and favicon.
+- Added confetti + toast on copy action.
+- Drag-and-drop bucket reordering with delete controls (hidden when only one bucket remains).
+
+### Fixed
+- Fixed term pill delete icon that was showing incorrect glyph after refactor.
+
+### Changed
+- Bucket delete control restyled as a subtle pill button aligned to the card footer.
+
+
 ## [0.1.0] - 2025-02-14
 ### Added
 - Initial project setup: React + TypeScript + Vite.
