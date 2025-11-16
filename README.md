@@ -202,23 +202,11 @@ You can deploy **as-is** to:
 
 The output is a self-contained static site.
 
-### Basic Netlify deploy
-1. `npm run build`
-2. Drag `dist/` folder into Netlify dashboard  
-OR  
-Create `netlify.toml`:
-```toml
-[build]
-  command = "npm run build"
-  publish = "dist"
+### Basic Vercel deploy
 
-Basic Vercel deploy
+Just run: vercel deploy
 
-Just run:
-
-vercel deploy
-
-GitHub Pages
+### GitHub Pages
 
 npm run build
 
@@ -228,23 +216,19 @@ npm install gh-pages --save-dev
 npm run build
 npx gh-pages -d dist
 
-🔒 License
+## 🔒 License
 
 This project is licensed under the Polyform Noncommercial License 1.0.0.
 See LICENSE file for full text.
 
-You may:
-
-View
-
-Use
-
-Modify
-
-Fork
+### You may:
+- View
+- Use
+- Modify
+- Fork
 As long as it is noncommercial.
 
-👤 Author
+### 👤 Author
 
 Created by Ed P.
 GitHub: https://github.com/SomeGuy02312
