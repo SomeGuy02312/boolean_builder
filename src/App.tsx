@@ -1,6 +1,6 @@
 // src/App.tsx
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import type {
   Bucket,
   OutputMode,
@@ -14,6 +14,9 @@ import confetti from "canvas-confetti";
 import HeaderBar from "./components/HeaderBar";
 import BucketsPanel from "./components/BucketsPanel";
 import BooleanPreview from "./components/BooleanPreview";
+import SavedSearchPanel from "./components/SavedSearchPanel";
+import { useSavedSearches } from "./hooks/useSavedSearches";
+import type { SavedSearch } from "./lib/savedSearches";
 
 
 const STORAGE_KEY = "boolean-builder-state-v1";
@@ -121,12 +124,66 @@ function App() {
   const [{ buckets, outputMode }, setState] = useState(() =>
     loadInitialState()
   );
+  const {
+    items: savedSearches,
+    create: createSavedSearch,
+    update: updateSavedSearch,
+    deleteSearch,
+    markUsed,
+    replaceAll: _replaceAll,
+    exportAll: _exportAll,
+    getRecents: _getRecents,
+  } = useSavedSearches();
+  const [currentSavedId, setCurrentSavedId] = useState<string | null>(null);
+  const [currentName, setCurrentName] = useState("");
+  const [isDirty, setIsDirty] = useState(false);
+  const lastSavedSnapshotRef = useRef<string | null>(null);
+  const [isSavedPanelOpen, setIsSavedPanelOpen] = useState(false);
+
+  const booleanString = useMemo(
+    () => buildBoolean(buckets, outputMode),
+    [buckets, outputMode]
+  );
+  const [renderedQueryString, setRenderedQueryString] = useState(
+    () => booleanString
+  );
+  const builderHasContent = useMemo(() => {
+    const bucketHasContent = buckets.some(
+      (bucket) =>
+        bucket.terms.length > 0 || bucket.name.trim().length > 0
+    );
+    const queryHasContent = renderedQueryString.trim().length > 0;
+    return bucketHasContent || queryHasContent;
+  }, [buckets, renderedQueryString]);
+  const skipQuerySyncRef = useRef(false);
 
   // Persist to localStorage whenever buckets or outputMode change
   useEffect(() => {
     const state: AppState = { buckets, outputMode };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [buckets, outputMode]);
+
+  useEffect(() => {
+    if (skipQuerySyncRef.current) {
+      skipQuerySyncRef.current = false;
+      return;
+    }
+    setRenderedQueryString(booleanString);
+  }, [booleanString]);
+
+  useEffect(() => {
+    const snapshot = JSON.stringify({
+      buckets,
+      outputMode,
+      queryString: renderedQueryString,
+    });
+    const lastSnapshot = lastSavedSnapshotRef.current;
+    if (lastSnapshot === null) {
+      setIsDirty(builderHasContent);
+      return;
+    }
+    setIsDirty(snapshot !== lastSnapshot);
+  }, [buckets, outputMode, renderedQueryString, builderHasContent]);
 
     const [copyToastVisible, setCopyToastVisible] = useState(false);
 
@@ -203,6 +260,102 @@ function App() {
       )
     );
   };
+
+  const loadSavedSearch = useCallback(
+    (saved: SavedSearch) => {
+      skipQuerySyncRef.current = true;
+      setState({
+        buckets: saved.state.buckets,
+        outputMode: saved.state.outputMode,
+      });
+      setRenderedQueryString(saved.queryString);
+      setCurrentSavedId(saved.id);
+      setCurrentName(saved.name);
+      setIsDirty(false);
+      lastSavedSnapshotRef.current = JSON.stringify({
+        buckets: saved.state.buckets,
+        outputMode: saved.state.outputMode,
+        queryString: saved.queryString,
+      });
+      markUsed(saved.id);
+    },
+    [markUsed]
+  );
+  const handleNameChange = useCallback((value: string) => {
+    setCurrentName(value);
+    setIsDirty(true);
+  }, []);
+  const handleSave = useCallback(() => {
+    if (!builderHasContent) return false;
+    if (!currentName.trim()) return false;
+    const nameToUse = currentName.trim() || "Untitled search";
+    const payloadState: AppState = {
+      buckets,
+      outputMode,
+    };
+    if (!currentSavedId) {
+      const saved = createSavedSearch({
+        name: nameToUse,
+        state: payloadState,
+        queryString: renderedQueryString,
+      });
+      setCurrentSavedId(saved.id);
+      setCurrentName(saved.name);
+      markUsed(saved.id);
+    } else {
+      updateSavedSearch(currentSavedId, {
+        name: nameToUse,
+        state: payloadState,
+        queryString: renderedQueryString,
+      });
+      markUsed(currentSavedId);
+    }
+    lastSavedSnapshotRef.current = JSON.stringify({
+      buckets,
+      outputMode,
+      queryString: renderedQueryString,
+    });
+    setIsDirty(false);
+    return true;
+  }, [
+    builderHasContent,
+    currentName,
+    buckets,
+    outputMode,
+    currentSavedId,
+    createSavedSearch,
+    updateSavedSearch,
+    renderedQueryString,
+    markUsed,
+  ]);
+  const handleLoadSavedFromPanel = useCallback(
+    (saved: SavedSearch) => {
+      loadSavedSearch(saved);
+      setIsSavedPanelOpen(false);
+    },
+    [loadSavedSearch]
+  );
+  const handleRenameSaved = useCallback(
+    (id: string, name: string) => {
+      updateSavedSearch(id, { name });
+      if (currentSavedId === id) {
+        setCurrentName(name);
+      }
+    },
+    [updateSavedSearch, currentSavedId]
+  );
+  const handleDeleteSaved = useCallback(
+    (id: string) => {
+      deleteSearch(id);
+      if (currentSavedId === id) {
+        setCurrentSavedId(null);
+        setCurrentName("");
+        lastSavedSnapshotRef.current = null;
+        setIsDirty(builderHasContent);
+      }
+    },
+    [deleteSearch, currentSavedId, builderHasContent]
+  );
 
   const handleMoveTerm = (
     sourceBucketId: string,
@@ -337,13 +490,11 @@ function App() {
     });
   };
 
-  const booleanString = buildBoolean(buckets, outputMode);
-
     const handleCopy = async () => {
-    if (!booleanString) return;
+    if (!renderedQueryString) return;
 
     try {
-      await navigator.clipboard.writeText(booleanString);
+      await navigator.clipboard.writeText(renderedQueryString);
 
       // Fire a small confetti burst from the bottom-center area
       confetti({
@@ -366,7 +517,7 @@ function App() {
     <div className="min-h-screen bg-app text-slate-900">
       <div className="max-w-6xl mx-auto py-8 px-4">
         {/* Header */}
-        <HeaderBar />
+        <HeaderBar onOpenSavedSearches={() => setIsSavedPanelOpen(true)} />
 
         {/* Main layout container: subtle panel around both columns */}
         <div className="mt-6 rounded-2xl bg-white/80 border border-slate-100 shadow-soft p-4">
@@ -387,10 +538,16 @@ function App() {
 
             {/* Right: Boolean preview */}
             <BooleanPreview
-              booleanString={booleanString}
+              booleanString={renderedQueryString}
               outputMode={outputMode}
               setOutputMode={setOutputMode}
               onCopy={handleCopy}
+              currentName={currentName}
+              onNameChange={handleNameChange}
+              isDirty={isDirty}
+              currentSavedId={currentSavedId}
+              onSave={handleSave}
+              hasContent={builderHasContent}
             />
           </div>
         </div>
@@ -404,8 +561,18 @@ function App() {
           </div>
         </div>
       )}
+      <SavedSearchPanel
+        open={isSavedPanelOpen}
+        onClose={() => setIsSavedPanelOpen(false)}
+        savedSearches={savedSearches}
+        onLoad={handleLoadSavedFromPanel}
+        onRename={handleRenameSaved}
+        onDelete={handleDeleteSaved}
+        currentSavedId={currentSavedId}
+      />
     </div>
   );
 }
 
 export default App;
+

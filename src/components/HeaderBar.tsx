@@ -1,4 +1,8 @@
-const HeaderBar = () => {
+type HeaderBarProps = {
+  onOpenSavedSearches: () => void;
+};
+
+const HeaderBar = ({ onOpenSavedSearches }: HeaderBarProps) => {
   return (
     <header className="flex items-center justify-between pb-4 border-b border-slate-200/60">
       <div className="flex items-center gap-3">
@@ -19,9 +23,13 @@ const HeaderBar = () => {
         </div>
       </div>
 
-      <div className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-        Templates (coming soon)
-      </div>
+      <button
+        type="button"
+        onClick={onOpenSavedSearches}
+        className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-4 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 hover:border-slate-400 transition"
+      >
+        Saved searches
+      </button>
     </header>
   );
 };
