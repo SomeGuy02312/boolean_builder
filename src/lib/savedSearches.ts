@@ -3,6 +3,7 @@ import type { AppState as SerializedBuilderState } from "./types";
 export type SavedSearch = {
   id: string;
   name: string;
+  isExample?: boolean;
   shortDescription?: string;
   queryString: string;
   state: SerializedBuilderState;

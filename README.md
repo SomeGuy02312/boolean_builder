@@ -1,73 +1,250 @@
-# React + TypeScript + Vite
+# Boolean Builder (V1.0)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A fast, modern, visual Boolean search builder designed for recruiters, sourcers, and talent teams.  
+Create clean Boolean strings using intuitive “groups,” save your searches locally, and reuse them instantly.
 
-Currently, two official plugins are available:
+Built with **React, TypeScript, Vite, TailwindCSS, shadcn/ui**, and a lightweight custom data layer.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+![screenshot](docs/screenshot.png)
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🌟 Features
 
-## Expanding the ESLint configuration
+### 🎯 Visual Boolean Builder
+- Create Boolean searches using **named groups** (formerly “buckets”).
+- Add terms as *pills* and organize them visually.
+- Automatic generation of valid Boolean strings with:
+  - OR within groups
+  - AND across groups
+  - NOT for exclusion groups
+- Real-time Boolean preview panel.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### 💾 Saved Searches
+Every search can be saved locally with:
+- Name  
+- Description  
+- Created / Updated timestamps  
+- Last Used  
+- SerializedBuilderState  
+- Generated query string
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+Full support for:
+- **Save**
+- **Save Changes**
+- **Save As New**
+- **Delete**
+- **Rename**
+- **Edit description inline**
+- **Usage tracking**
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### 🧭 Recent Searches
+Shows your **4 most recently used** searches with:
+- Name
+- Description
+- Example tag
+- Last used date
+- Stable ordering unless the membership changes
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### 📝 Detailed Help Panel
+Built-in help explaining:
+- How the tool works
+- What Boolean logic is
+- Examples of recruiter-friendly queries
+- Tips for sourcing
+- App architecture  
+- Link to GitHub profile
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 📥 Import & Export
+- **Export all** saved searches as JSON  
+- **Import & replace** via file upload  
+- Automatic versioning and validation  
+- Useful for sharing templates or backing up your work
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### 🚀 Built-in Examples
+The app ships with six real-life searches:
+- Senior Frontend Engineer
+- Senior Backend Engineer (Distributed Systems)
+- Enterprise Account Executive
+- Sales Development Representative
+- Registered Nurse (ER)
+- Senior Accountant (GL)
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Examples behave exactly like normal saved searches—rename, edit, or delete them freely.
+
+---
+
+## 🛠 Tech Stack
+
+This app is intentionally lightweight and fast:
+
+| Layer | Details |
+|-------|---------|
+| Framework | React + TypeScript |
+| Build System | Vite |
+| Styling | TailwindCSS |
+| UI Components | shadcn/ui + Radix primitives |
+| Icons | lucide-react |
+| State | React hooks |
+| Storage | localStorage (JSON) |
+| Routing | None (single-screen app) |
+
+All state is 100% client-side.  
+No backend. No tracking. No cookies.
+
+---
+
+## 📦 Project Structure
+
+src/
+components/
+SavedSearchPanel.tsx
+HelpPanel.tsx
+GroupEditor.tsx
+RecentSearches.tsx
+...other UI components
+hooks/
+useSavedSearches.ts
+useBuilderState.ts
+lib/
+savedSearches.ts
+booleanGenerator.ts
+data/
+exampleSearches.ts
+styles/
+globals.css
+App.tsx
+main.tsx
+
+
+---
+
+## 🧩 Key Components & Architecture
+
+### `useSavedSearches`
+A custom hook that manages:
+- Save
+- Update
+- Delete
+- Replace all
+- Export all
+- Loading from localStorage
+- Recency tracking
+- One-time example seeding
+
+### `useBuilderState`
+Manages the logical structure of a Boolean search:
+- Groups
+- Pills
+- Order
+- Operators
+- SerializedBuilderState for saving/loading
+
+### `SavedSearchPanel`
+Side drawer with:
+- Filtering
+- Inline rename
+- Inline description editing
+- Delete (trash icon)
+- Example badges
+- Import/export footer
+
+### `HelpPanel`
+Readable, “mini-document” UI with:
+- Concepts
+- Boolean basics
+- Recruiter tips
+- Tech overview
+- GitHub link
+
+### `RecentSearches`
+Polished card grid for recents with stable ordering.
+
+---
+
+## 🧪 Development
+
+### Install dependencies
+
+npm install
+
+
+### Run locally
+
+
+npm run dev
+
+Runs on Vite’s dev server with hot reloading.
+
+### Build for production
+
+
+npm run build
+
+
+### Preview production build
+
+
+npm run preview
+
+
+---
+
+## 🚀 Deployment
+
+You can deploy **as-is** to:
+
+- Netlify  
+- Vercel  
+- GitHub Pages  
+- Cloudflare Pages  
+- Any static host
+
+The output is a self-contained static site.
+
+### Basic Netlify deploy
+1. `npm run build`
+2. Drag `dist/` folder into Netlify dashboard  
+OR  
+Create `netlify.toml`:
+```toml
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+Basic Vercel deploy
+
+Just run:
+
+vercel deploy
+
+GitHub Pages
+
+npm run build
+
+Push dist/ via gh-pages:
+
+npm install gh-pages --save-dev
+npm run build
+npx gh-pages -d dist
+
+🔒 License
+
+This project is licensed under the Polyform Noncommercial License 1.0.0.
+See LICENSE file for full text.
+
+You may:
+
+View
+
+Use
+
+Modify
+
+Fork
+As long as it is noncommercial.
+
+👤 Author
+
+Created by Ed P.
+GitHub: https://github.com/SomeGuy02312

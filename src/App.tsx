@@ -600,35 +600,31 @@ function App() {
 
         {/* Search controls */}
         <div className="mt-4">
-        <SearchControlsBar
-          currentName={currentName}
-          onNameChange={handleNameChange}
-          currentSavedId={currentSavedId}
-          isDirty={isDirty}
-          hasContent={hasContent}
-          onSave={handleSave}
-          onSaveAsNew={handleSaveAsNew}
-          onOpenSavedSearches={() => setIsSavedPanelOpen(true)}
-        />
         {displayRecents.length > 0 && (
-          <section className="mt-4">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">
-              Recent searches
-            </h2>
-            <div className="flex flex-wrap gap-3">
+          <section className="mb-5">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Recent searches
+              </h2>
+              <span className="text-[11px] text-slate-500/80">
+                Click to load and continue refining
+              </span>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
               {displayRecents.map((item) => (
                 <button
                   key={item.id}
                   type="button"
                   onClick={() => loadSavedSearch(item)}
-                  className="group text-left flex-1 min-w-[220px] max-w-[280px] rounded-lg border border-slate-200 bg-white/70 px-3 py-2 hover:bg-slate-50 hover:border-slate-300 transition shadow-sm"
+                  className="group rounded-xl border border-slate-200 bg-white/80 px-3 py-2.5 text-left shadow-sm hover:shadow-md hover:bg-slate-50 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50"
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-medium line-clamp-1 text-slate-900">
+                    <span className="text-sm font-medium truncate text-slate-900">
                       {item.name}
                     </span>
-                    {item.name.trim().endsWith("(Example)") && (
-                      <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[11px] bg-slate-100 text-slate-500">
+                    {(item.isExample ||
+                      item.name.trim().endsWith("(Example)")) && (
+                      <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] bg-slate-100 text-slate-500">
                         Example
                       </span>
                     )}
@@ -642,7 +638,7 @@ function App() {
                       {item.queryString}
                     </p>
                   )}
-                  <p className="mt-1 text-[11px] text-slate-400">
+                  <p className="mt-1 text-[11px] text-slate-500/80">
                     {formatLastUsed(item.lastUsedAt)}
                   </p>
                 </button>
@@ -650,11 +646,8 @@ function App() {
             </div>
           </section>
         )}
-        </div>
-
-        {/* Empty state intro */}
         {!isIntroHidden && !hasContent && currentSavedId === null && (
-          <div className="mt-6 rounded-2xl bg-white/80 border border-slate-100 shadow-soft p-6">
+          <div className="mt-6 mb-5 rounded-2xl bg-white/80 border border-slate-100 shadow-soft p-6">
             <div className="flex items-start justify-between gap-4 mb-2">
               <h2 className="text-lg font-semibold text-slate-900">
                 Build Boolean searches visually
@@ -677,17 +670,28 @@ function App() {
                 How to get started
               </p>
               <ul className="list-disc list-inside text-sm text-slate-600 space-y-1">
-                <li>Add a group – for titles, skills, companies, or exclusions.</li>
-                <li>Add keywords – each keyword becomes a pill in that group.</li>
+                <li>Add a group — for titles, skills, companies, or exclusions.</li>
+                <li>Add keywords — each keyword becomes a pill in that group.</li>
                 <li>
-                  Tune the logic – adjust the operators to match how you’d write the
+                  Tune the logic — adjust the operators to match how you’d write the
                   search.
                 </li>
-                <li>Copy &amp; use – paste the final Boolean string into your sourcing tool.</li>
+                <li>Copy &amp; use — paste the final Boolean string into your sourcing tool.</li>
               </ul>
             </div>
           </div>
         )}
+        <SearchControlsBar
+          currentName={currentName}
+          onNameChange={handleNameChange}
+          currentSavedId={currentSavedId}
+          isDirty={isDirty}
+          hasContent={hasContent}
+          onSave={handleSave}
+          onSaveAsNew={handleSaveAsNew}
+          onOpenSavedSearches={() => setIsSavedPanelOpen(true)}
+        />
+        </div>
 
         {/* Main layout container: subtle panel around both columns */}
         <div className="mt-6 rounded-2xl bg-white/80 border border-slate-100 shadow-soft p-4">
@@ -736,6 +740,11 @@ function App() {
           setIsSavedPanelOpen(false);
         }}
         onRename={handleRenameSaved}
+        onUpdateDescription={(id, desc) =>
+          update(id, {
+            shortDescription: desc && desc.trim() ? desc.trim() : undefined,
+          })
+        }
         onDelete={handleDeleteSaved}
         onExportAll={exportAll}
         onReplaceAll={handleReplaceAllSaved}

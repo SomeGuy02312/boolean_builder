@@ -24,7 +24,7 @@ const HelpPanel = ({ isOpen, onClose }: HelpPanelProps) => {
       />
       <aside className="w-full max-w-lg bg-white shadow-softLg border-l border-slate-200 flex flex-col">
         <header className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
-          <h2 className="text-sm font-medium text-slate-700">Help &amp; tips</h2>
+          <h2 className="text-sm font-semibold text-slate-900">Help &amp; tips</h2>
           <button
             type="button"
             onClick={onClose}
@@ -35,54 +35,41 @@ const HelpPanel = ({ isOpen, onClose }: HelpPanelProps) => {
           </button>
         </header>
 
-        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4 text-sm text-slate-700">
-          <section>
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 text-sm">
+          <section className="space-y-1.5">
             <h3 className="text-sm font-semibold text-slate-900">What this tool is</h3>
-            <p className="mt-2 text-slate-600">
+            <p className="text-sm text-slate-600">
               A visual Boolean builder for recruiters and sourcers. Build clean search strings
               for LinkedIn, SeekOut, your ATS, or job boards without memorizing every operator or
               parenthesis rule.
             </p>
           </section>
 
-          <section>
+          <section className="space-y-1.5">
             <h3 className="text-sm font-semibold text-slate-900">Core concepts</h3>
-            <div className="mt-2 space-y-3 text-slate-600">
-              <div>
-                <h4 className="text-xs uppercase tracking-wide text-slate-500">Search</h4>
-                <p>Create and iterate on Boolean strings for specific roles or evergreen pipelines.</p>
-              </div>
-              <div>
-                <h4 className="text-xs uppercase tracking-wide text-slate-500">Groups</h4>
-                <p>
-                  Formerly “buckets.” Each group is a set of related keywords—titles, skills,
-                  companies, or exclusions.
-                </p>
-              </div>
-              <div>
-                <h4 className="text-xs uppercase tracking-wide text-slate-500">Pills / terms</h4>
-                <p>Each keyword becomes a pill inside a group so you can drag, delete, or edit quickly.</p>
-              </div>
-              <div>
-                <h4 className="text-xs uppercase tracking-wide text-slate-500">Operators</h4>
-            <ul className="list-disc list-inside text-slate-600">
+            <ul className="list-disc pl-5 space-y-1 text-sm text-slate-600">
               <li>
-                <strong>AND</strong> – combines groups so both conditions must be true.
+                <span className="font-semibold">Search.</span> Create or refine Boolean strings for
+                specific roles or evergreen pipelines.
               </li>
               <li>
-                <strong>OR</strong> – joins alternatives inside a group.
+                <span className="font-semibold">Groups.</span> Formerly “buckets.” Each group is a set
+                of related keywords—titles, skills, companies, or exclusions.
               </li>
               <li>
-                <strong>NOT</strong> – excludes terms; some tools use a leading minus.
+                <span className="font-semibold">Pills / terms.</span> Each keyword becomes a pill you
+                can drag, edit, or remove quickly.
+              </li>
+              <li>
+                <span className="font-semibold">Operators.</span> AND combines groups, OR joins
+                alternatives, NOT excludes terms.
               </li>
             </ul>
-              </div>
-            </div>
           </section>
 
-          <section>
+          <section className="space-y-1.5">
             <h3 className="text-sm font-semibold text-slate-900">How to build a search</h3>
-            <ol className="mt-2 list-decimal list-inside space-y-1 text-slate-600">
+            <ol className="list-decimal pl-5 space-y-1 text-sm text-slate-600">
               <li>Start a new search (Clear) if you want a blank canvas.</li>
               <li>Add a group and give it a clear name.</li>
               <li>Add keywords as pills—titles, skills, companies, or exclusions.</li>
@@ -91,85 +78,87 @@ const HelpPanel = ({ isOpen, onClose }: HelpPanelProps) => {
             </ol>
           </section>
 
-          <section>
+          <section className="space-y-1.5">
             <h3 className="text-sm font-semibold text-slate-900">Saving searches &amp; import/export</h3>
-            <ul className="mt-2 list-disc list-inside space-y-1 text-slate-600">
+            <ul className="list-disc pl-5 space-y-1 text-sm text-slate-600">
               <li>Use Save / Save changes / Save as new from the header controls.</li>
               <li>Open the Saved searches panel to load, rename, or delete saved searches.</li>
               <li>Export all downloads a JSON file; Import &amp; replace swaps your current list.</li>
             </ul>
           </section>
 
-          <section>
+          <section className="space-y-1.5">
             <h3 className="text-sm font-semibold text-slate-900">Boolean basics for recruiters</h3>
-            <ul className="mt-2 list-disc list-inside space-y-1 text-slate-600">
+            <ul className="list-disc pl-5 space-y-1 text-sm text-slate-600">
               <li>
-                <strong>AND</strong> narrows – everyone must match both sides.
+                <span className="font-semibold">AND</span> narrows—everyone must match both sides.
               </li>
               <li>
-                <strong>OR</strong> broadens – use for similar titles or skills.
+                <span className="font-semibold">OR</span> broadens—use for similar titles or skills.
               </li>
               <li>
-                <strong>NOT</strong> excludes – drop unrelated skills or titles.
+                <span className="font-semibold">NOT</span> excludes—drop unrelated skills or titles.
               </li>
               <li>Use quotes for phrases (“product manager”).</li>
               <li>
-                Parentheses group logic, e.g.{" "}
-                <span className="font-mono">
+                Parentheses group logic, e.g.:
+                <pre className="mt-1 rounded-md bg-slate-100 px-2.5 py-2 text-xs font-mono text-slate-600 overflow-x-auto">
                   ("product manager" OR "product owner") AND (SaaS OR "B2B software")
-                </span>
+                </pre>
               </li>
             </ul>
           </section>
 
-          <section>
+          <section className="space-y-1.5">
             <h3 className="text-sm font-semibold text-slate-900">Tips for sourcing</h3>
-            <ul className="mt-2 list-disc list-inside space-y-1 text-slate-600">
+            <ul className="list-disc pl-5 space-y-1 text-sm text-slate-600">
               <li>Create groups for titles, skills, companies, and exclusions.</li>
               <li>Save evergreen searches for recurring roles.</li>
               <li>Keep an exclusions group handy for internal titles or noisy terms.</li>
             </ul>
           </section>
 
-          <section>
+          <section className="space-y-1.5">
             <h3 className="text-sm font-semibold text-slate-900">
               How this app works &amp; tech used
             </h3>
-            <p className="mt-2 text-slate-600">
-              This app is a small, focused tool built for recruiters and sourcers who live in
-              Boolean every day. It runs entirely in your browser—no login, no server, and your
-              searches never leave your machine.
+            <p className="text-sm text-slate-600">
+              This app is a small, focused tool built for recruiters and sourcers who live in Boolean
+              every day. It runs entirely in your browser—no login, no server, and your searches never
+              leave your machine.
             </p>
-            <ul className="mt-2 list-disc list-inside space-y-1 text-slate-600">
+            <ul className="list-disc pl-5 space-y-1 text-sm text-slate-600">
               <li>
-                <strong>React + TypeScript.</strong> Single-page UI with strong types for safer
-                refactors.
+                <span className="font-semibold">React + TypeScript.</span> Single-page UI with strong
+                types for safer refactors.
               </li>
               <li>
-                <strong>Local storage, not a database.</strong> Saved searches stay in your browser
-                unless you export or import them.
+                <span className="font-semibold">Local storage, not a database.</span> Saved searches
+                stay in your browser unless you export or import them.
               </li>
               <li>
-                <strong>Vite-powered dev environment.</strong> Fast refresh and builds keep
-                iteration quick.
+                <span className="font-semibold">Vite-powered dev environment.</span> Fast refresh and
+                builds keep iteration quick.
               </li>
               <li>
-                <strong>Composable hooks &amp; components.</strong> Features like saved searches
-                and import/export reuse small, focused pieces.
+                <span className="font-semibold">Composable hooks &amp; components.</span> Features like
+                saved searches and import/export reuse small, focused pieces.
               </li>
             </ul>
-            <p className="mt-4 text-slate-600">
-              If you’d like to see more projects like this, follow along on GitHub:
-            </p>
-            <a
-              href="https://github.com/SomeGuy02312"
-              target="_blank"
-              rel="noreferrer"
-              className="mt-2 inline-flex items-center gap-2 text-sm text-primary hover:underline"
-            >
-              <GithubIcon className="w-4 h-4" />
-              <span>See more on GitHub</span>
-            </a>
+            <div className="mt-2">
+              <p className="text-sm text-slate-600 mb-1">
+                If you’d like to see more projects like this, follow along on GitHub:
+              </p>
+              <a
+                href="https://github.com/SomeGuy02312"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+              >
+                <GithubIcon className="w-4 h-4" />
+                <span>See more on GitHub</span>
+              </a>
+            </div>
           </section>
         </div>
       </aside>

@@ -61,7 +61,8 @@ const createState = (groups: Array<{ name: string; terms: string[] }>): Serializ
 export const EXAMPLE_SAVED_SEARCHES: SavedSearch[] = [
   {
     id: "1f4f5f76-3f41-4cf0-bc2c-2b8c3289f001",
-    name: "Senior Frontend Engineer (Example)",
+    name: "Senior Frontend Engineer",
+    isExample: true,
     shortDescription: "Senior frontend engineer for SaaS products (React + TypeScript, complex UI).",
     createdAt: EXAMPLE_DATE,
     updatedAt: EXAMPLE_DATE,
@@ -94,7 +95,8 @@ export const EXAMPLE_SAVED_SEARCHES: SavedSearch[] = [
   },
   {
     id: "c7e34e2b-a8f7-4483-8cd5-5f53d8acb18d",
-    name: "Senior Backend Engineer – Distributed Systems (Example)",
+    name: "Senior Backend Engineer - Distributed Systems",
+    isExample: true,
     shortDescription:
       "Backend engineer for distributed systems (Go/Java, Kafka, cloud).",
     createdAt: EXAMPLE_DATE,
@@ -128,7 +130,8 @@ export const EXAMPLE_SAVED_SEARCHES: SavedSearch[] = [
   },
   {
     id: "9396f1d3-830d-4d3a-9603-b15f641a4e6f",
-    name: "Enterprise Account Executive (Example)",
+    name: "Enterprise Account Executive",
+    isExample: true,
     shortDescription: "Enterprise SaaS AE closing mid-market and enterprise deals.",
     createdAt: EXAMPLE_DATE,
     updatedAt: EXAMPLE_DATE,
@@ -160,7 +163,8 @@ export const EXAMPLE_SAVED_SEARCHES: SavedSearch[] = [
   },
   {
     id: "3c7ca8ea-3cc7-4793-bc55-9b140f9db8c4",
-    name: "Sales Development Representative (Example)",
+    name: "Sales Development Representative",
+    isExample: true,
     shortDescription:
       "Outbound SDR / BDR for SaaS, focused on prospecting and cold outreach.",
     createdAt: EXAMPLE_DATE,
@@ -194,7 +198,8 @@ export const EXAMPLE_SAVED_SEARCHES: SavedSearch[] = [
   },
   {
     id: "f7d6a5aa-0d8c-4214-9e64-3a4732c38fa6",
-    name: "Registered Nurse – Emergency Department (Example)",
+    name: "Registered Nurse - Emergency Department",
+    isExample: true,
     shortDescription:
       "Emergency department RN with triage, trauma, and critical care experience.",
     createdAt: EXAMPLE_DATE,
@@ -224,7 +229,8 @@ export const EXAMPLE_SAVED_SEARCHES: SavedSearch[] = [
   },
   {
     id: "1e32b948-e9a8-44b7-9b42-8b208365f11b",
-    name: "Senior Accountant – Corporate / GL (Example)",
+    name: "Senior Accountant - Corporate / GL",
+    isExample: true,
     shortDescription:
       "Senior corporate accountant with GL, GAAP, and month-end close experience.",
     createdAt: EXAMPLE_DATE,
