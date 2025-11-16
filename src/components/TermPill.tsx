@@ -30,14 +30,15 @@ const TermPill = ({ id, term, colorKey, onRemove }: TermPillProps) => {
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.85 : 1,
+    opacity: isDragging ? 0.35 : 1,
   };
+  const dragClassName = isDragging ? "shadow-none" : "";
 
   return (
     <span
       ref={setNodeRef}
       style={style}
-      className={`inline-flex items-center gap-1 rounded-pill px-2.5 py-1 text-xs shadow-pill ${colorClass}`}
+      className={`inline-flex items-center gap-1 rounded-pill px-2.5 py-1 text-xs shadow-pill ${colorClass} ${dragClassName}`}
       {...attributes}
       {...listeners}
     >

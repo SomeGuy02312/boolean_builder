@@ -1,8 +1,11 @@
-import type { Bucket, Operator } from "../lib/types";
+import { useState, type Dispatch, type SetStateAction } from "react";
+import type { Bucket, Operator, TermColorKey } from "../lib/types";
 import {
   DndContext,
   type DragEndEvent,
   closestCenter,
+  DragOverlay,
+  useDndMonitor,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -11,7 +14,26 @@ import {
 } from "@dnd-kit/sortable";
 import BucketCard from "./BucketCard";
 
+const TERM_COLOR_CLASSES: Record<TermColorKey, string> = {
+  lavender: "bg-pill-lavender text-slate-800",
+  blue: "bg-pill-blue text-slate-800",
+  mint: "bg-pill-mint text-slate-800",
+  cyan: "bg-cyan-100 text-cyan-900",
+  teal: "bg-teal-100 text-teal-900",
+  yellow: "bg-yellow-100 text-yellow-900",
+  orange: "bg-orange-100 text-orange-900",
+  red: "bg-red-100 text-red-900",
+  pink: "bg-pink-100 text-pink-900",
+  violet: "bg-violet-100 text-violet-900",
+};
+
 const END_DROP_PREFIX = "term-drop-end::";
+
+type ActiveTerm = {
+  id: string;
+  value: string;
+  colorKey: TermColorKey;
+};
 
 type BucketsPanelProps = {
   buckets: Bucket[];
@@ -54,6 +76,8 @@ const BucketsPanel = (props: BucketsPanelProps) => {
     }
     return null;
   };
+
+  const [activeTerm, setActiveTerm] = useState<ActiveTerm | null>(null);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -130,6 +154,11 @@ const BucketsPanel = (props: BucketsPanelProps) => {
       </div>
 
       <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <TermDragMonitor
+          buckets={buckets}
+          findTermLocation={findTermLocation}
+          setActiveTerm={setActiveTerm}
+        />
         <SortableContext
           items={buckets.map((b) => b.id)}
           strategy={verticalListSortingStrategy}
@@ -152,9 +181,57 @@ const BucketsPanel = (props: BucketsPanelProps) => {
             ))}
           </div>
         </SortableContext>
+        <DragOverlay>
+          {activeTerm ? (
+            <span
+              className={`inline-flex items-center gap-1 rounded-pill px-2.5 py-1 text-xs shadow-softLg ${TERM_COLOR_CLASSES[activeTerm.colorKey]}`}
+            >
+              {activeTerm.value}
+            </span>
+          ) : null}
+        </DragOverlay>
       </DndContext>
     </section>
   );
+};
+
+type TermDragMonitorProps = {
+  buckets: Bucket[];
+  findTermLocation: (
+    termId: string
+  ) => { bucketId: string; index: number } | null;
+  setActiveTerm: Dispatch<SetStateAction<ActiveTerm | null>>;
+};
+
+const TermDragMonitor = ({
+  buckets,
+  findTermLocation,
+  setActiveTerm,
+}: TermDragMonitorProps) => {
+  useDndMonitor({
+    onDragStart(event) {
+      const termLocation = findTermLocation(String(event.active.id));
+      if (!termLocation) return;
+      const bucket = buckets.find((b) => b.id === termLocation.bucketId);
+      if (!bucket) return;
+      const term = bucket.terms[termLocation.index];
+      if (term) {
+        setActiveTerm({
+          id: term.id,
+          value: term.value,
+          colorKey: term.colorKey,
+        });
+      }
+    },
+    onDragEnd() {
+      setActiveTerm(null);
+    },
+    onDragCancel() {
+      setActiveTerm(null);
+    },
+  });
+
+  return null;
 };
 
 export default BucketsPanel;
