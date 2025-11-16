@@ -5,6 +5,8 @@ Create clean Boolean strings using intuitive “groups,” save your searches lo
 
 Built with **React, TypeScript, Vite, TailwindCSS, shadcn/ui**, and a lightweight custom data layer.
 
+Try it live at [boolean-builder.hiregear.us](https://boolean-builder.hiregear.us/)
+
 ![screenshot](docs/screenshot.png)
 
 ---
