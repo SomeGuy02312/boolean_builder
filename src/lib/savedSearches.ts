@@ -31,19 +31,12 @@ export function loadSavedSearches(): SavedSearchCollection {
   }
 
   const raw = window.localStorage.getItem(SAVED_SEARCHES_STORAGE_KEY);
-  console.log("[savedSearches] loadSavedSearches raw:", raw);
   if (!raw) {
-    const empty = { ...EMPTY_COLLECTION };
-    console.log(
-      "[savedSearches] loadSavedSearches returning empty:",
-      empty
-    );
-    return empty;
+    return { ...EMPTY_COLLECTION };
   }
 
   try {
     const parsed = JSON.parse(raw) as SavedSearchCollection;
-    console.log("[savedSearches] loadSavedSearches parsed:", parsed);
     if (
       !parsed ||
       typeof parsed !== "object" ||
@@ -51,19 +44,18 @@ export function loadSavedSearches(): SavedSearchCollection {
       !Array.isArray(parsed.items)
     ) {
       console.warn(
-        "[savedSearches] Invalid saved searches shape in localStorage; resetting."
+        "[savedSearches] Parsed saved searches missing items[], resetting."
       );
       return { ...EMPTY_COLLECTION };
     }
     return parsed;
   } catch (error) {
     console.warn(
-      "[savedSearches] Failed to parse saved searches from localStorage:",
+      "[savedSearches] Invalid JSON in localStorage, resetting saved searches:",
       error
     );
-    const empty = { ...EMPTY_COLLECTION };
     window.localStorage.removeItem(SAVED_SEARCHES_STORAGE_KEY);
-    return empty;
+    return { ...EMPTY_COLLECTION };
   }
 }
 
@@ -72,12 +64,6 @@ export function persistSavedSearches(
 ): void {
   if (typeof window === "undefined" || !window.localStorage) return;
   try {
-    console.log(
-      "[savedSearches] persistSavedSearches writing",
-      SAVED_SEARCHES_STORAGE_KEY,
-      "items:",
-      collection.items.length
-    );
     const payload = JSON.stringify(collection);
     window.localStorage.setItem(SAVED_SEARCHES_STORAGE_KEY, payload);
   } catch (error) {

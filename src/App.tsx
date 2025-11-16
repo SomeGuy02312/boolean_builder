@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import type {
   Bucket,
   OutputMode,
-  AppState,
+  AppState as SerializedBuilderState,
   Operator,
   Term,
   TermColorKey,
@@ -14,12 +14,15 @@ import confetti from "canvas-confetti";
 import HeaderBar from "./components/HeaderBar";
 import BucketsPanel from "./components/BucketsPanel";
 import BooleanPreview from "./components/BooleanPreview";
+import SearchControlsBar from "./components/SearchControlsBar";
 import SavedSearchPanel from "./components/SavedSearchPanel";
+import HelpPanel from "./components/HelpPanel";
 import { useSavedSearches } from "./hooks/useSavedSearches";
 import type { SavedSearch } from "./lib/savedSearches";
 
 
 const STORAGE_KEY = "boolean-builder-state-v1";
+const INTRO_PANEL_STORAGE_KEY = "boolean-builder-hide-intro";
 
 const TERM_COLORS: TermColorKey[] = [
   "lavender",
@@ -81,26 +84,41 @@ const normalizeBuckets = (rawBuckets: PersistedBucket[]): Bucket[] =>
 const DEFAULT_BUCKETS: Bucket[] = [
   {
     id: "bucket-1",
-    name: "Bucket 1",
+    name: "Group 1",
     terms: [],
     isEnabled: true,
     operatorAfter: "AND",
   },
 ];
 
-function loadInitialState(): { buckets: Bucket[]; outputMode: OutputMode } {
+const cloneBucket = (bucket: Bucket): Bucket => ({
+  ...bucket,
+  terms: bucket.terms.map((term) => ({ ...term })),
+});
+
+const createDefaultBuckets = (): Bucket[] =>
+  DEFAULT_BUCKETS.map((bucket) => cloneBucket(bucket));
+
+function createDefaultBuilderState(): SerializedBuilderState {
+  return {
+    buckets: createDefaultBuckets(),
+    outputMode: "pretty",
+  };
+}
+
+function loadInitialState(): SerializedBuilderState {
   if (typeof window === "undefined") {
-    return { buckets: DEFAULT_BUCKETS, outputMode: "pretty" };
+    return createDefaultBuilderState();
   }
 
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      return { buckets: DEFAULT_BUCKETS, outputMode: "pretty" };
+      return createDefaultBuilderState();
     }
-    const parsed = JSON.parse(raw) as AppState;
+    const parsed = JSON.parse(raw) as SerializedBuilderState;
     if (!parsed || !Array.isArray(parsed.buckets)) {
-      return { buckets: DEFAULT_BUCKETS, outputMode: "pretty" };
+      return createDefaultBuilderState();
     }
     const mode: OutputMode =
       parsed.outputMode === "minified" ? "minified" : "pretty";
@@ -109,29 +127,30 @@ function loadInitialState(): { buckets: Bucket[]; outputMode: OutputMode } {
 
     const normalizedBuckets = persistedBuckets.length
       ? normalizeBuckets(persistedBuckets)
-      : DEFAULT_BUCKETS;
+      : createDefaultBuckets();
 
     return {
       buckets: normalizedBuckets,
       outputMode: mode,
     };
   } catch {
-    return { buckets: DEFAULT_BUCKETS, outputMode: "pretty" };
+    return createDefaultBuilderState();
   }
 }
 
 function App() {
-  const [{ buckets, outputMode }, setState] = useState(() =>
+  const [builderState, setBuilderState] = useState<SerializedBuilderState>(() =>
     loadInitialState()
   );
+  const { buckets, outputMode } = builderState;
   const {
     items: savedSearches,
-    create: createSavedSearch,
-    update: updateSavedSearch,
+    create,
+    update,
     deleteSearch,
     markUsed,
-    replaceAll: _replaceAll,
-    exportAll: _exportAll,
+    replaceAll,
+    exportAll,
     getRecents: _getRecents,
   } = useSavedSearches();
   const [currentSavedId, setCurrentSavedId] = useState<string | null>(null);
@@ -139,51 +158,56 @@ function App() {
   const [isDirty, setIsDirty] = useState(false);
   const lastSavedSnapshotRef = useRef<string | null>(null);
   const [isSavedPanelOpen, setIsSavedPanelOpen] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [isIntroHidden, setIsIntroHidden] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(INTRO_PANEL_STORAGE_KEY) === "true";
+  });
 
   const booleanString = useMemo(
     () => buildBoolean(buckets, outputMode),
     [buckets, outputMode]
   );
-  const [renderedQueryString, setRenderedQueryString] = useState(
-    () => booleanString
-  );
-  const builderHasContent = useMemo(() => {
-    const bucketHasContent = buckets.some(
-      (bucket) =>
-        bucket.terms.length > 0 || bucket.name.trim().length > 0
+  const [queryString, setQueryString] = useState(() => booleanString);
+  const hasContent = useMemo(() => {
+    return (
+      builderState.buckets?.some((bucket) => bucket.terms.length > 0) ?? false
     );
-    const queryHasContent = renderedQueryString.trim().length > 0;
-    return bucketHasContent || queryHasContent;
-  }, [buckets, renderedQueryString]);
+  }, [builderState.buckets]);
   const skipQuerySyncRef = useRef(false);
 
   // Persist to localStorage whenever buckets or outputMode change
   useEffect(() => {
-    const state: AppState = { buckets, outputMode };
+    const state: SerializedBuilderState = { buckets, outputMode };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [buckets, outputMode]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(INTRO_PANEL_STORAGE_KEY, isIntroHidden ? "true" : "false");
+  }, [isIntroHidden]);
 
   useEffect(() => {
     if (skipQuerySyncRef.current) {
       skipQuerySyncRef.current = false;
       return;
     }
-    setRenderedQueryString(booleanString);
+    setQueryString(booleanString);
   }, [booleanString]);
 
   useEffect(() => {
     const snapshot = JSON.stringify({
       buckets,
       outputMode,
-      queryString: renderedQueryString,
+      queryString,
     });
     const lastSnapshot = lastSavedSnapshotRef.current;
     if (lastSnapshot === null) {
-      setIsDirty(builderHasContent);
+      setIsDirty(hasContent);
       return;
     }
     setIsDirty(snapshot !== lastSnapshot);
-  }, [buckets, outputMode, renderedQueryString, builderHasContent]);
+  }, [buckets, outputMode, queryString, hasContent]);
 
     const [copyToastVisible, setCopyToastVisible] = useState(false);
 
@@ -199,14 +223,14 @@ function App() {
   }, [copyToastVisible]);
 
   const updateBuckets = (updater: (prev: Bucket[]) => Bucket[]) => {
-    setState((prev) => ({
+    setBuilderState((prev) => ({
       ...prev,
       buckets: updater(prev.buckets),
     }));
   };
 
   const setOutputMode = (mode: OutputMode) => {
-    setState((prev) => ({ ...prev, outputMode: mode }));
+    setBuilderState((prev) => ({ ...prev, outputMode: mode }));
   };
 
   const handleBucketNameChange = (id: string, name: string) => {
@@ -264,11 +288,11 @@ function App() {
   const loadSavedSearch = useCallback(
     (saved: SavedSearch) => {
       skipQuerySyncRef.current = true;
-      setState({
+      setBuilderState({
         buckets: saved.state.buckets,
         outputMode: saved.state.outputMode,
       });
-      setRenderedQueryString(saved.queryString);
+      setQueryString(saved.queryString);
       setCurrentSavedId(saved.id);
       setCurrentName(saved.name);
       setIsDirty(false);
@@ -281,68 +305,98 @@ function App() {
     },
     [markUsed]
   );
-  const handleNameChange = useCallback((value: string) => {
-    setCurrentName(value);
-    setIsDirty(true);
-  }, []);
   const handleSave = useCallback(() => {
-    if (!builderHasContent) return false;
-    if (!currentName.trim()) return false;
-    const nameToUse = currentName.trim() || "Untitled search";
-    const payloadState: AppState = {
-      buckets,
-      outputMode,
-    };
+    if (!hasContent) return false;
+    const trimmedName = currentName.trim();
+    const nameToUse = trimmedName || "Untitled search";
+
     if (!currentSavedId) {
-      const saved = createSavedSearch({
+      const saved = create({
         name: nameToUse,
-        state: payloadState,
-        queryString: renderedQueryString,
+        shortDescription: undefined,
+        state: builderState,
+        queryString,
       });
       setCurrentSavedId(saved.id);
       setCurrentName(saved.name);
       markUsed(saved.id);
     } else {
-      updateSavedSearch(currentSavedId, {
+      if (!isDirty) return false;
+      update(currentSavedId, {
         name: nameToUse,
-        state: payloadState,
-        queryString: renderedQueryString,
+        state: builderState,
+        queryString,
       });
+      setCurrentName(nameToUse);
       markUsed(currentSavedId);
     }
     lastSavedSnapshotRef.current = JSON.stringify({
-      buckets,
-      outputMode,
-      queryString: renderedQueryString,
+      buckets: builderState.buckets,
+      outputMode: builderState.outputMode,
+      queryString,
     });
     setIsDirty(false);
     return true;
   }, [
-    builderHasContent,
+    hasContent,
     currentName,
-    buckets,
-    outputMode,
     currentSavedId,
-    createSavedSearch,
-    updateSavedSearch,
-    renderedQueryString,
+    queryString,
     markUsed,
+    builderState,
+    create,
+    update,
+    isDirty,
   ]);
-  const handleLoadSavedFromPanel = useCallback(
-    (saved: SavedSearch) => {
-      loadSavedSearch(saved);
-      setIsSavedPanelOpen(false);
+  const handleSaveAsNew = useCallback(() => {
+    if (!hasContent) return false;
+    const trimmedName = currentName.trim();
+    const nameToUse = trimmedName || "Untitled search";
+
+    const saved = create({
+      name: nameToUse,
+      shortDescription: undefined,
+      state: builderState,
+      queryString,
+    });
+    setCurrentSavedId(saved.id);
+    setCurrentName(saved.name);
+    markUsed(saved.id);
+    lastSavedSnapshotRef.current = JSON.stringify({
+      buckets: builderState.buckets,
+      outputMode: builderState.outputMode,
+      queryString,
+    });
+    setIsDirty(false);
+    return true;
+  }, [hasContent, currentName, builderState, queryString, create, markUsed]);
+  const handleClearSearch = useCallback(() => {
+    skipQuerySyncRef.current = true;
+    const initialState = createDefaultBuilderState();
+    setBuilderState(initialState);
+    setQueryString("");
+    setCurrentSavedId(null);
+    setCurrentName("");
+    setIsDirty(false);
+    lastSavedSnapshotRef.current = null;
+  }, []);
+  const handleNameChange = useCallback(
+    (value: string) => {
+      setCurrentName(value);
+      if (currentSavedId) {
+        setIsDirty(true);
+      }
     },
-    [loadSavedSearch]
+    [currentSavedId]
   );
   const handleRenameSaved = useCallback(
     (id: string, name: string) => {
-      updateSavedSearch(id, { name });
+      update(id, { name });
       if (currentSavedId === id) {
         setCurrentName(name);
       }
     },
-    [updateSavedSearch, currentSavedId]
+    [update, currentSavedId]
   );
   const handleDeleteSaved = useCallback(
     (id: string) => {
@@ -351,10 +405,20 @@ function App() {
         setCurrentSavedId(null);
         setCurrentName("");
         lastSavedSnapshotRef.current = null;
-        setIsDirty(builderHasContent);
+        setIsDirty(hasContent);
       }
     },
-    [deleteSearch, currentSavedId, builderHasContent]
+    [deleteSearch, currentSavedId, hasContent]
+  );
+  const handleReplaceAllSaved = useCallback(
+    (items: SavedSearch[]) => {
+      replaceAll(items);
+      handleClearSearch();
+      if (items.length > 0) {
+        loadSavedSearch(items[0]);
+      }
+    },
+    [replaceAll, handleClearSearch, loadSavedSearch]
   );
 
   const handleMoveTerm = (
@@ -461,7 +525,7 @@ function App() {
         return [
           {
             id: "bucket-1",
-            name: "Bucket 1",
+            name: "Group 1",
             terms: [],
             isEnabled: true,
             operatorAfter: "AND",
@@ -481,7 +545,7 @@ function App() {
         ...prev,
         {
           id: `bucket-${newIndex}`,
-          name: `Bucket ${newIndex}`,
+          name: `Group ${newIndex}`,
           terms: [],
           isEnabled: true,
           operatorAfter: "AND",
@@ -491,10 +555,10 @@ function App() {
   };
 
     const handleCopy = async () => {
-    if (!renderedQueryString) return;
+    if (!queryString) return;
 
     try {
-      await navigator.clipboard.writeText(renderedQueryString);
+      await navigator.clipboard.writeText(queryString);
 
       // Fire a small confetti burst from the bottom-center area
       confetti({
@@ -517,7 +581,58 @@ function App() {
     <div className="min-h-screen bg-app text-slate-900">
       <div className="max-w-6xl mx-auto py-8 px-4">
         {/* Header */}
-        <HeaderBar onOpenSavedSearches={() => setIsSavedPanelOpen(true)} />
+        <HeaderBar onOpenHelp={() => setIsHelpOpen(true)} />
+
+        {/* Search controls */}
+        <div className="mt-4">
+          <SearchControlsBar
+            currentName={currentName}
+            onNameChange={handleNameChange}
+            currentSavedId={currentSavedId}
+            isDirty={isDirty}
+            hasContent={hasContent}
+            onSave={handleSave}
+            onSaveAsNew={handleSaveAsNew}
+            onOpenSavedSearches={() => setIsSavedPanelOpen(true)}
+          />
+        </div>
+
+        {/* Empty state intro */}
+        {!isIntroHidden && !hasContent && currentSavedId === null && (
+          <div className="mt-6 rounded-2xl bg-white/80 border border-slate-100 shadow-soft p-6">
+            <div className="flex items-start justify-between gap-4 mb-2">
+              <h2 className="text-lg font-semibold text-slate-900">
+                Build Boolean searches visually
+              </h2>
+              <button
+                type="button"
+                onClick={() => setIsIntroHidden(true)}
+                className="inline-flex items-center rounded-full border border-slate-300 px-2 py-0.5 text-xs font-medium text-slate-600 hover:text-slate-900 hover:border-slate-400 transition"
+              >
+                Hide
+              </button>
+            </div>
+            <p className="text-sm text-slate-600 mb-4">
+              Use groups of related keywords to build clean Boolean strings for
+              LinkedIn, SeekOut, or your ATS. No need to remember every operator
+              or parenthesis rule.
+            </p>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-slate-500 mb-2">
+                How to get started
+              </p>
+              <ul className="list-disc list-inside text-sm text-slate-600 space-y-1">
+                <li>Add a group – for titles, skills, companies, or exclusions.</li>
+                <li>Add keywords – each keyword becomes a pill in that group.</li>
+                <li>
+                  Tune the logic – adjust the operators to match how you’d write the
+                  search.
+                </li>
+                <li>Copy &amp; use – paste the final Boolean string into your sourcing tool.</li>
+              </ul>
+            </div>
+          </div>
+        )}
 
         {/* Main layout container: subtle panel around both columns */}
         <div className="mt-6 rounded-2xl bg-white/80 border border-slate-100 shadow-soft p-4">
@@ -534,20 +649,15 @@ function App() {
               handleReorderBuckets={handleReorderBuckets}
               handleDeleteBucket={handleDeleteBucket}
               onMoveTerm={handleMoveTerm}
+              onClear={handleClearSearch}
             />
 
             {/* Right: Boolean preview */}
             <BooleanPreview
-              booleanString={renderedQueryString}
+              booleanString={queryString}
               outputMode={outputMode}
               setOutputMode={setOutputMode}
               onCopy={handleCopy}
-              currentName={currentName}
-              onNameChange={handleNameChange}
-              isDirty={isDirty}
-              currentSavedId={currentSavedId}
-              onSave={handleSave}
-              hasContent={builderHasContent}
             />
           </div>
         </div>
@@ -561,13 +671,19 @@ function App() {
           </div>
         </div>
       )}
+      <HelpPanel isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
       <SavedSearchPanel
         open={isSavedPanelOpen}
         onClose={() => setIsSavedPanelOpen(false)}
-        savedSearches={savedSearches}
-        onLoad={handleLoadSavedFromPanel}
+        items={savedSearches}
+        onOpenSearch={(saved) => {
+          loadSavedSearch(saved);
+          setIsSavedPanelOpen(false);
+        }}
         onRename={handleRenameSaved}
         onDelete={handleDeleteSaved}
+        onExportAll={exportAll}
+        onReplaceAll={handleReplaceAllSaved}
         currentSavedId={currentSavedId}
       />
     </div>

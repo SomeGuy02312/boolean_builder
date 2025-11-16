@@ -61,7 +61,7 @@ const BucketCard = ({
             {...attributes}
             {...listeners}
             className="cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600"
-            aria-label="Reorder bucket"
+            aria-label="Reorder group"
           >
             ⋮⋮
           </button>
@@ -133,10 +133,10 @@ const BucketCard = ({
         }}
       />
 
-      {/* Operator after this bucket (if not last) */}
+      {/* Operator after this group (if not last) */}
       {!isLast && (
         <div className="pt-2 border-t border-dashed border-slate-200">
-          <label className="text-xs text-slate-500">Operator to next bucket:</label>
+          <label className="text-xs text-slate-500">Operator to next group:</label>
           <select
             value={bucket.operatorAfter}
             onChange={(e) =>

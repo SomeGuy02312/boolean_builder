@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import type { OutputMode } from "../lib/types";
 
 type BooleanPreviewProps = {
@@ -6,12 +5,6 @@ type BooleanPreviewProps = {
   outputMode: OutputMode;
   setOutputMode: (mode: OutputMode) => void;
   onCopy: () => void;
-  currentName: string;
-  onNameChange: (value: string) => void;
-  isDirty: boolean;
-  currentSavedId: string | null;
-  onSave: () => boolean;
-  hasContent: boolean;
 };
 
 const BooleanPreview = ({
@@ -19,47 +12,7 @@ const BooleanPreview = ({
   outputMode,
   setOutputMode,
   onCopy,
-  currentName,
-  onNameChange,
-  isDirty,
-  currentSavedId,
-  onSave,
-  hasContent,
 }: BooleanPreviewProps) => {
-  const [savedPulse, setSavedPulse] = useState(false);
-
-  useEffect(() => {
-    if (!savedPulse) return;
-    const timeout = window.setTimeout(() => setSavedPulse(false), 800);
-    return () => window.clearTimeout(timeout);
-  }, [savedPulse]);
-
-  const hasExisting = Boolean(currentSavedId);
-  const nameTrimmed = currentName.trim();
-  const baseDisabled =
-    nameTrimmed.length === 0 || !hasContent || (hasExisting && !isDirty);
-  const isSaveDisabled = baseDisabled;
-
-  const saveLabel = !hasExisting
-    ? "Save"
-    : isDirty
-    ? "Update"
-    : "Saved";
-
-  const handleSaveClick = () => {
-    if (isSaveDisabled) return;
-    const success = onSave();
-    if (success) {
-      setSavedPulse(true);
-    }
-  };
-
-  const saveButtonClass = savedPulse
-    ? "bg-primary/10 text-primary"
-    : "bg-gradient-to-r from-primary to-primary-light text-white hover:shadow-softLg";
-  const saveButtonDisabledClass = savedPulse
-    ? "cursor-default"
-    : "disabled:opacity-40 disabled:cursor-not-allowed";
 
   return (
     <section className="pl-6 border-l border-slate-200/70">
@@ -97,24 +50,7 @@ const BooleanPreview = ({
           {booleanString || "/* Start adding terms to see your Boolean here */"}
         </pre>
 
-        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 flex-1">
-            <input
-              type="text"
-              placeholder="Name this search..."
-              value={currentName}
-              onChange={(e) => onNameChange(e.target.value)}
-              className="w-full sm:max-w-[220px] rounded-md border border-slate-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-            />
-            <button
-              type="button"
-              onClick={handleSaveClick}
-              disabled={isSaveDisabled}
-              className={`inline-flex items-center rounded-full px-4 py-1.5 text-sm font-medium shadow-soft transition ${saveButtonClass} ${saveButtonDisabledClass}`}
-            >
-              {saveLabel}
-            </button>
-          </div>
+        <div className="mt-3 flex justify-end">
           <button
             type="button"
             onClick={onCopy}

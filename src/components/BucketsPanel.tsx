@@ -51,6 +51,7 @@ type BucketsPanelProps = {
     targetBucketId: string,
     targetIndex: number
   ) => void;
+  onClear: () => void;
 };
 
 const BucketsPanel = (props: BucketsPanelProps) => {
@@ -65,6 +66,7 @@ const BucketsPanel = (props: BucketsPanelProps) => {
     handleReorderBuckets,
     handleDeleteBucket,
     onMoveTerm,
+    onClear,
   } = props;
 
   const findTermLocation = (termId: string) => {
@@ -141,16 +143,25 @@ const BucketsPanel = (props: BucketsPanelProps) => {
 
   return (
     <section>
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-medium">Buckets</h2>
-        <button
-          type="button"
-          onClick={handleAddBucket}
-          disabled={buckets.length >= 8}
-          className="inline-flex items-center rounded-full bg-gradient-to-r from-primary to-primary-light px-3.5 py-1.5 text-sm font-medium text-white shadow-soft hover:shadow-softLg disabled:opacity-40 disabled:cursor-not-allowed transition"
-        >
-          + Add bucket
-        </button>
+      <div className="flex items-center justify-between mb-3 gap-3">
+        <h2 className="text-lg font-medium">Groups</h2>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onClear}
+            className="inline-flex items-center rounded-full border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 hover:border-slate-400 transition"
+          >
+            Clear
+          </button>
+          <button
+            type="button"
+            onClick={handleAddBucket}
+            disabled={buckets.length >= 8}
+            className="inline-flex items-center rounded-full bg-gradient-to-r from-primary to-primary-light px-3.5 py-1.5 text-sm font-medium text-white shadow-soft hover:shadow-softLg disabled:opacity-40 disabled:cursor-not-allowed transition"
+          >
+            + Add group
+          </button>
+        </div>
       </div>
 
       <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
