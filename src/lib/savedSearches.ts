@@ -20,42 +20,35 @@ export const SAVED_SEARCHES_STORAGE_KEY = "booleanBuilder.savedSearches.v1";
 export const SAVED_SEARCHES_EXPORT_TYPE = "boolean-builder-saved-searches";
 export const SAVED_SEARCHES_EXPORT_VERSION = 1;
 
-const EMPTY_COLLECTION: SavedSearchCollection = {
-  version: SAVED_SEARCHES_EXPORT_VERSION,
-  items: [],
-};
-
 export function loadSavedSearches(): SavedSearchCollection {
   if (typeof window === "undefined" || !window.localStorage) {
-    return { ...EMPTY_COLLECTION };
+    return { version: SAVED_SEARCHES_EXPORT_VERSION, items: [] };
   }
 
   const raw = window.localStorage.getItem(SAVED_SEARCHES_STORAGE_KEY);
   if (!raw) {
-    return { ...EMPTY_COLLECTION };
+    return { version: SAVED_SEARCHES_EXPORT_VERSION, items: [] };
   }
 
   try {
-    const parsed = JSON.parse(raw) as SavedSearchCollection;
-    if (
-      !parsed ||
-      typeof parsed !== "object" ||
-      typeof parsed.version !== "number" ||
-      !Array.isArray(parsed.items)
-    ) {
+    const parsed = JSON.parse(raw);
+    if (!parsed || !Array.isArray(parsed.items)) {
       console.warn(
-        "[savedSearches] Parsed saved searches missing items[], resetting."
+        "[savedSearches] Invalid structure in localStorage, resetting."
       );
-      return { ...EMPTY_COLLECTION };
+      return { version: SAVED_SEARCHES_EXPORT_VERSION, items: [] };
     }
-    return parsed;
+    return {
+      version: parsed.version ?? SAVED_SEARCHES_EXPORT_VERSION,
+      items: parsed.items,
+    };
   } catch (error) {
     console.warn(
       "[savedSearches] Invalid JSON in localStorage, resetting saved searches:",
       error
     );
     window.localStorage.removeItem(SAVED_SEARCHES_STORAGE_KEY);
-    return { ...EMPTY_COLLECTION };
+    return { version: SAVED_SEARCHES_EXPORT_VERSION, items: [] };
   }
 }
 

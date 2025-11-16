@@ -114,7 +114,7 @@ const SavedSearchPanel = ({
       return;
     }
 
-    let data: any;
+    let data: unknown;
     try {
       data = JSON.parse(text);
     } catch {
@@ -138,7 +138,8 @@ const SavedSearchPanel = ({
     );
     if (!confirmed) return;
 
-    const items = data.items as SavedSearch[];
+    const parsed = data as { items: SavedSearch[] };
+    const items = parsed.items as SavedSearch[];
     onReplaceAll(items);
     alert(`Imported ${items.length} searches and replaced your previous list.`);
   };
@@ -232,14 +233,21 @@ const SavedSearchPanel = ({
                       <button
                         type="button"
                         onClick={() => {
-                        onOpenSearch(item);
+                          onOpenSearch(item);
                           onClose();
                         }}
                         className="flex-1 text-left"
                       >
-                        <p className="font-medium text-sm text-slate-900">
-                          {item.name}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm text-slate-900">
+                            {item.name}
+                          </span>
+                          {item.name.trim().endsWith("(Example)") && (
+                            <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[11px] bg-slate-100 text-slate-500">
+                              Example
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-slate-500 truncate">
                           {item.shortDescription ||
                             item.queryString ||

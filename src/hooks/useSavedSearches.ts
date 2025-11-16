@@ -7,6 +7,9 @@ import {
   SAVED_SEARCHES_EXPORT_VERSION,
 } from "../lib/savedSearches";
 import type { AppState as SerializedBuilderState } from "../lib/types";
+import { EXAMPLE_SAVED_SEARCHES } from "../data/exampleSearches";
+
+const EXAMPLE_SEEDED_KEY = "booleanBuilder.examplesSeeded.v1";
 
 type CreateInput = {
   name: string;
@@ -16,9 +19,40 @@ type CreateInput = {
 };
 
 export function useSavedSearches() {
-  const [collection, setCollection] = useState<SavedSearchCollection>(() =>
-    loadSavedSearches()
-  );
+  const [collection, setCollection] = useState<SavedSearchCollection>(() => {
+    const loaded = loadSavedSearches();
+    const exampleSeeded =
+      typeof window !== "undefined" &&
+      window.localStorage.getItem(EXAMPLE_SEEDED_KEY) === "true";
+
+    if (!exampleSeeded) {
+      const existingItems = loaded.items ?? [];
+      const existingNames = new Set(
+        existingItems.map((item) => item.name.trim().toLowerCase())
+      );
+
+      const mergedItems: SavedSearch[] = [
+        ...existingItems,
+        ...EXAMPLE_SAVED_SEARCHES.filter(
+          (example) => !existingNames.has(example.name.trim().toLowerCase())
+        ),
+      ];
+
+      const initial: SavedSearchCollection = {
+        version: loaded.version ?? SAVED_SEARCHES_EXPORT_VERSION,
+        items: mergedItems,
+      };
+
+      persistSavedSearches(initial);
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(EXAMPLE_SEEDED_KEY, "true");
+      }
+
+      return initial;
+    }
+
+    return loaded;
+  });
 
   const create = (input: CreateInput): SavedSearch => {
     const now = new Date().toISOString();

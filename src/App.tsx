@@ -1,6 +1,6 @@
 // src/App.tsx
 
-import { useEffect, useRef, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import type {
   Bucket,
   OutputMode,
@@ -42,6 +42,13 @@ const generateTermId = () => `term-${Date.now()}-${termIdCounter++}`;
 
 const pickTermColor = (termCount: number): TermColorKey =>
   TERM_COLORS[termCount % TERM_COLORS.length];
+
+const formatLastUsed = (iso?: string) => {
+  if (!iso) return "";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return `Last used ${date.toLocaleDateString()}`;
+};
 
 type PersistedBucket = Omit<Bucket, "terms"> & {
   terms: Array<Term | string | null | undefined>;
@@ -151,12 +158,37 @@ function App() {
     markUsed,
     replaceAll,
     exportAll,
-    getRecents: _getRecents,
+    getRecents,
   } = useSavedSearches();
+  const recents = getRecents(4);
+  const [displayRecents, setDisplayRecents] = useState<SavedSearch[]>(recents);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDisplayRecents((prev) => {
+      if (recents.length === 0) {
+        return [];
+      }
+
+      if (prev.length === 0) {
+        return recents;
+      }
+
+      const newIds = recents.map((item) => item.id);
+      const oldIds = prev.map((item) => item.id);
+      const sameLength = newIds.length === oldIds.length;
+      const membershipSame =
+        sameLength && newIds.every((id) => oldIds.includes(id));
+
+      if (membershipSame) {
+        return prev;
+      }
+
+      return recents;
+    });
+  }, [recents]);
   const [currentSavedId, setCurrentSavedId] = useState<string | null>(null);
   const [currentName, setCurrentName] = useState("");
-  const [isDirty, setIsDirty] = useState(false);
-  const lastSavedSnapshotRef = useRef<string | null>(null);
+  const [lastSavedSnapshot, setLastSavedSnapshot] = useState<string | null>(null);
   const [isSavedPanelOpen, setIsSavedPanelOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isIntroHidden, setIsIntroHidden] = useState(() => {
@@ -168,13 +200,11 @@ function App() {
     () => buildBoolean(buckets, outputMode),
     [buckets, outputMode]
   );
-  const [queryString, setQueryString] = useState(() => booleanString);
   const hasContent = useMemo(() => {
     return (
       builderState.buckets?.some((bucket) => bucket.terms.length > 0) ?? false
     );
   }, [builderState.buckets]);
-  const skipQuerySyncRef = useRef(false);
 
   // Persist to localStorage whenever buckets or outputMode change
   useEffect(() => {
@@ -187,27 +217,18 @@ function App() {
     window.localStorage.setItem(INTRO_PANEL_STORAGE_KEY, isIntroHidden ? "true" : "false");
   }, [isIntroHidden]);
 
-  useEffect(() => {
-    if (skipQuerySyncRef.current) {
-      skipQuerySyncRef.current = false;
-      return;
+  const isDirty = useMemo(() => {
+    if (lastSavedSnapshot === null) {
+      return hasContent;
     }
-    setQueryString(booleanString);
-  }, [booleanString]);
-
-  useEffect(() => {
     const snapshot = JSON.stringify({
       buckets,
       outputMode,
-      queryString,
+      queryString: booleanString,
+      name: currentName.trim(),
     });
-    const lastSnapshot = lastSavedSnapshotRef.current;
-    if (lastSnapshot === null) {
-      setIsDirty(hasContent);
-      return;
-    }
-    setIsDirty(snapshot !== lastSnapshot);
-  }, [buckets, outputMode, queryString, hasContent]);
+    return snapshot !== lastSavedSnapshot;
+  }, [buckets, outputMode, booleanString, currentName, lastSavedSnapshot, hasContent]);
 
     const [copyToastVisible, setCopyToastVisible] = useState(false);
 
@@ -287,20 +308,20 @@ function App() {
 
   const loadSavedSearch = useCallback(
     (saved: SavedSearch) => {
-      skipQuerySyncRef.current = true;
       setBuilderState({
         buckets: saved.state.buckets,
         outputMode: saved.state.outputMode,
       });
-      setQueryString(saved.queryString);
       setCurrentSavedId(saved.id);
       setCurrentName(saved.name);
-      setIsDirty(false);
-      lastSavedSnapshotRef.current = JSON.stringify({
-        buckets: saved.state.buckets,
-        outputMode: saved.state.outputMode,
-        queryString: saved.queryString,
-      });
+      setLastSavedSnapshot(
+        JSON.stringify({
+          buckets: saved.state.buckets,
+          outputMode: saved.state.outputMode,
+          queryString: saved.queryString,
+          name: saved.name.trim(),
+        })
+      );
       markUsed(saved.id);
     },
     [markUsed]
@@ -315,7 +336,7 @@ function App() {
         name: nameToUse,
         shortDescription: undefined,
         state: builderState,
-        queryString,
+        queryString: booleanString,
       });
       setCurrentSavedId(saved.id);
       setCurrentName(saved.name);
@@ -325,23 +346,25 @@ function App() {
       update(currentSavedId, {
         name: nameToUse,
         state: builderState,
-        queryString,
+        queryString: booleanString,
       });
       setCurrentName(nameToUse);
       markUsed(currentSavedId);
     }
-    lastSavedSnapshotRef.current = JSON.stringify({
-      buckets: builderState.buckets,
-      outputMode: builderState.outputMode,
-      queryString,
-    });
-    setIsDirty(false);
+    setLastSavedSnapshot(
+      JSON.stringify({
+        buckets: builderState.buckets,
+        outputMode: builderState.outputMode,
+        queryString: booleanString,
+        name: nameToUse.trim(),
+      })
+    );
     return true;
   }, [
     hasContent,
     currentName,
     currentSavedId,
-    queryString,
+    booleanString,
     markUsed,
     builderState,
     create,
@@ -357,38 +380,31 @@ function App() {
       name: nameToUse,
       shortDescription: undefined,
       state: builderState,
-      queryString,
+      queryString: booleanString,
     });
     setCurrentSavedId(saved.id);
     setCurrentName(saved.name);
     markUsed(saved.id);
-    lastSavedSnapshotRef.current = JSON.stringify({
-      buckets: builderState.buckets,
-      outputMode: builderState.outputMode,
-      queryString,
-    });
-    setIsDirty(false);
+    setLastSavedSnapshot(
+      JSON.stringify({
+        buckets: builderState.buckets,
+        outputMode: builderState.outputMode,
+        queryString: booleanString,
+        name: saved.name.trim(),
+      })
+    );
     return true;
-  }, [hasContent, currentName, builderState, queryString, create, markUsed]);
+  }, [hasContent, currentName, builderState, booleanString, create, markUsed]);
   const handleClearSearch = useCallback(() => {
-    skipQuerySyncRef.current = true;
     const initialState = createDefaultBuilderState();
     setBuilderState(initialState);
-    setQueryString("");
     setCurrentSavedId(null);
     setCurrentName("");
-    setIsDirty(false);
-    lastSavedSnapshotRef.current = null;
+    setLastSavedSnapshot(null);
   }, []);
-  const handleNameChange = useCallback(
-    (value: string) => {
-      setCurrentName(value);
-      if (currentSavedId) {
-        setIsDirty(true);
-      }
-    },
-    [currentSavedId]
-  );
+  const handleNameChange = useCallback((value: string) => {
+    setCurrentName(value);
+  }, []);
   const handleRenameSaved = useCallback(
     (id: string, name: string) => {
       update(id, { name });
@@ -404,11 +420,10 @@ function App() {
       if (currentSavedId === id) {
         setCurrentSavedId(null);
         setCurrentName("");
-        lastSavedSnapshotRef.current = null;
-        setIsDirty(hasContent);
+        setLastSavedSnapshot(null);
       }
     },
-    [deleteSearch, currentSavedId, hasContent]
+    [deleteSearch, currentSavedId]
   );
   const handleReplaceAllSaved = useCallback(
     (items: SavedSearch[]) => {
@@ -555,10 +570,10 @@ function App() {
   };
 
     const handleCopy = async () => {
-    if (!queryString) return;
+    if (!booleanString) return;
 
     try {
-      await navigator.clipboard.writeText(queryString);
+      await navigator.clipboard.writeText(booleanString);
 
       // Fire a small confetti burst from the bottom-center area
       confetti({
@@ -585,16 +600,56 @@ function App() {
 
         {/* Search controls */}
         <div className="mt-4">
-          <SearchControlsBar
-            currentName={currentName}
-            onNameChange={handleNameChange}
-            currentSavedId={currentSavedId}
-            isDirty={isDirty}
-            hasContent={hasContent}
-            onSave={handleSave}
-            onSaveAsNew={handleSaveAsNew}
-            onOpenSavedSearches={() => setIsSavedPanelOpen(true)}
-          />
+        <SearchControlsBar
+          currentName={currentName}
+          onNameChange={handleNameChange}
+          currentSavedId={currentSavedId}
+          isDirty={isDirty}
+          hasContent={hasContent}
+          onSave={handleSave}
+          onSaveAsNew={handleSaveAsNew}
+          onOpenSavedSearches={() => setIsSavedPanelOpen(true)}
+        />
+        {displayRecents.length > 0 && (
+          <section className="mt-4">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">
+              Recent searches
+            </h2>
+            <div className="flex flex-wrap gap-3">
+              {displayRecents.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => loadSavedSearch(item)}
+                  className="group text-left flex-1 min-w-[220px] max-w-[280px] rounded-lg border border-slate-200 bg-white/70 px-3 py-2 hover:bg-slate-50 hover:border-slate-300 transition shadow-sm"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-sm font-medium line-clamp-1 text-slate-900">
+                      {item.name}
+                    </span>
+                    {item.name.trim().endsWith("(Example)") && (
+                      <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[11px] bg-slate-100 text-slate-500">
+                        Example
+                      </span>
+                    )}
+                  </div>
+                  {item.shortDescription ? (
+                    <p className="text-xs text-slate-500 line-clamp-2">
+                      {item.shortDescription}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-slate-500 line-clamp-2">
+                      {item.queryString}
+                    </p>
+                  )}
+                  <p className="mt-1 text-[11px] text-slate-400">
+                    {formatLastUsed(item.lastUsedAt)}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
         </div>
 
         {/* Empty state intro */}
@@ -654,7 +709,7 @@ function App() {
 
             {/* Right: Boolean preview */}
             <BooleanPreview
-              booleanString={queryString}
+              booleanString={booleanString}
               outputMode={outputMode}
               setOutputMode={setOutputMode}
               onCopy={handleCopy}
