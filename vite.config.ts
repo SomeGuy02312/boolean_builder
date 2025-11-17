@@ -4,5 +4,6 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: '/', // IMPORTANT for custom domain
+  base: '/boolean_builder/',   // 👈 IMPORTANT: repo name with leading & trailing slash
+
 })
