@@ -1,3 +1,9 @@
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=fff)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=fff)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=fff)](https://vite.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?logo=tailwindcss&logoColor=fff)](https://tailwindcss.com/)
+[![License](https://img.shields.io/badge/License-Polyform%20NC-111827)](LICENSE)
+
 # Boolean Builder (V1.0)
 
 A fast, modern, visual Boolean search builder designed for recruiters, sourcers, and talent teams.  
@@ -7,7 +13,7 @@ Built with **React, TypeScript, Vite, TailwindCSS, shadcn/ui**, and a lightweigh
 
 Try it live at [boolean-builder.hiregear.us](https://boolean-builder.hiregear.us/)
 
-![screenshot](docs/screenshot.png)
+![screenshot](public/screenshot.png)
 
 ---
 
@@ -17,7 +23,7 @@ Try it live at [boolean-builder.hiregear.us](https://boolean-builder.hiregear.us
 - Create Boolean searches using **named groups** (formerly “buckets”).
 - Add terms as *pills* and organize them visually.
 - Automatic generation of valid Boolean strings with:
-  - OR within groups
+  - AND/OR within groups
   - AND across groups
   - NOT for exclusion groups
 - Real-time Boolean preview panel.

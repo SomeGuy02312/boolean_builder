@@ -1,5 +1,6 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import type { CSSProperties } from "react";
 import type { TermColorKey } from "../lib/types";
 
 const TERM_COLOR_CLASSES: Record<TermColorKey, string> = {
@@ -20,13 +21,22 @@ type TermPillProps = {
   term: string;
   colorKey: TermColorKey;
   onRemove: () => void;
+  pillClassName?: string;
+  pillStyle?: CSSProperties;
 };
 
-const TermPill = ({ id, term, colorKey, onRemove }: TermPillProps) => {
+const TermPill = ({
+  id,
+  term,
+  colorKey,
+  onRemove,
+  pillClassName,
+  pillStyle,
+}: TermPillProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id });
 
-  const colorClass = TERM_COLOR_CLASSES[colorKey];
+  const colorClass = pillClassName ?? TERM_COLOR_CLASSES[colorKey];
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -37,7 +47,7 @@ const TermPill = ({ id, term, colorKey, onRemove }: TermPillProps) => {
   return (
     <span
       ref={setNodeRef}
-      style={style}
+      style={{ ...style, ...pillStyle }}
       className={`inline-flex items-center gap-1 rounded-pill px-2.5 py-1 text-xs shadow-pill ${colorClass} ${dragClassName}`}
       {...attributes}
       {...listeners}

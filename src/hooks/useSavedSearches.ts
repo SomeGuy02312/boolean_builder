@@ -51,7 +51,23 @@ export function useSavedSearches() {
       return initial;
     }
 
-    return loaded;
+    // Refresh existing example searches with latest definitions
+    const exampleIds = new Set(EXAMPLE_SAVED_SEARCHES.map((item) => item.id));
+    const existingItems = loaded.items ?? [];
+    const withoutExamples = existingItems.filter(
+      (item) => !exampleIds.has(item.id)
+    );
+    const mergedItems: SavedSearch[] = [
+      ...withoutExamples,
+      ...EXAMPLE_SAVED_SEARCHES,
+    ];
+
+    const refreshed: SavedSearchCollection = {
+      version: loaded.version ?? SAVED_SEARCHES_EXPORT_VERSION,
+      items: mergedItems,
+    };
+    persistSavedSearches(refreshed);
+    return refreshed;
   });
 
   const create = (input: CreateInput): SavedSearch => {

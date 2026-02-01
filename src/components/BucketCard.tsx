@@ -1,56 +1,92 @@
-import { useDroppable } from "@dnd-kit/core";
+import { useDroppable, type DraggableAttributes } from "@dnd-kit/core";
 import {
   SortableContext,
-  useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import type { Bucket, Operator } from "../lib/types";
+import type { SyntheticListenerMap } from "@dnd-kit/core/dist/hooks/utilities";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { Power, Trash2 } from "lucide-react";
+import type { Bucket } from "../lib/types";
+import { getBucketTheme } from "../lib/bucketThemes";
 import TermPill from "./TermPill";
 
 type BucketCardProps = {
   bucket: Bucket;
   index: number;
-  isLast: boolean;
   onNameChange: (id: string, name: string) => void;
   onToggle: (id: string) => void;
   onAddTerm: (bucketId: string, term: string) => void;
   onRemoveTerm: (bucketId: string, termIndex: number) => void;
-  onOperatorChange: (bucketId: string, operator: Operator) => void;
+  onOperatorWithinChange: (id: string, operator: "AND" | "OR") => void;
   onDelete: (id: string) => void;
   canDelete: boolean;
+  dragHandleProps?: {
+    attributes: DraggableAttributes;
+    listeners?: SyntheticListenerMap;
+  };
+  isDragging?: boolean;
 };
 
 const BucketCard = ({
   bucket,
   index,
-  isLast,
   onNameChange,
   onToggle,
   onAddTerm,
   onRemoveTerm,
-  onOperatorChange,
+  onOperatorWithinChange,
   onDelete,
   canDelete,
+  dragHandleProps,
+  isDragging,
 }: BucketCardProps) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: bucket.id });
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [draftTitle, setDraftTitle] = useState(bucket.name);
+  const titleInputRef = useRef<HTMLInputElement | null>(null);
   const endDropId = `term-drop-end::${bucket.id}`;
   const { setNodeRef: setEndDropRef } = useDroppable({
     id: endDropId,
   });
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.85 : 1,
+  useEffect(() => {
+    if (!isEditingTitle) {
+      setDraftTitle(bucket.name);
+    }
+  }, [bucket.name, isEditingTitle]);
+
+  useEffect(() => {
+    if (isEditingTitle) {
+      titleInputRef.current?.focus();
+      titleInputRef.current?.select();
+    }
+  }, [isEditingTitle]);
+
+  const commitTitle = () => {
+    const trimmed = draftTitle.trim();
+    onNameChange(bucket.id, trimmed || bucket.name);
+    setIsEditingTitle(false);
   };
+
+  const cancelTitleEdit = () => {
+    setDraftTitle(bucket.name);
+    setIsEditingTitle(false);
+  };
+
+  const theme = getBucketTheme(bucket.themeKey);
+  const cardStyle: CSSProperties = {
+    "--bucket-border": theme.border,
+    "--bucket-halo": theme.halo,
+    "--bucket-handle": theme.handle,
+    "--bucket-pill-bg": theme.pillBg,
+    "--bucket-pill-text": theme.pillText,
+  } as CSSProperties;
 
   return (
     <div
-      ref={setNodeRef}
-      style={style}
-      className="rounded-bucket bg-card shadow-soft border border-slate-100 p-4 space-y-3 hover:shadow-softLg hover:-translate-y-[1px] transition"
+      style={cardStyle}
+      className={`bucket-card rounded-bucket bg-card border p-4 space-y-3 hover:-translate-y-[1px] transition ${
+        isDragging ? "opacity-85" : "opacity-100"
+      }`}
       data-bucket-index={index}
     >
       {/* Bucket header */}
@@ -58,29 +94,102 @@ const BucketCard = ({
         <div className="flex items-center gap-2 flex-1">
           <button
             type="button"
-            {...attributes}
-            {...listeners}
-            className="cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600"
+            {...dragHandleProps?.attributes}
+            {...dragHandleProps?.listeners}
+            className="bucket-handle cursor-grab active:cursor-grabbing hover:opacity-80"
             aria-label="Reorder group"
           >
             ⋮⋮
           </button>
-          <input
-            type="text"
-            value={bucket.name}
-            onChange={(e) => onNameChange(bucket.id, e.target.value)}
-            className="flex-1 rounded-md border border-slate-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-          />
+          {isEditingTitle ? (
+            <input
+              ref={titleInputRef}
+              type="text"
+              value={draftTitle}
+              onChange={(e) => setDraftTitle(e.target.value)}
+              onBlur={commitTitle}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  commitTitle();
+                }
+                if (e.key === "Escape") {
+                  e.preventDefault();
+                  cancelTitleEdit();
+                }
+              }}
+              className="flex-1 rounded-md border border-slate-200 px-2 py-1 text-[15px] font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary"
+              aria-label="Group name"
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsEditingTitle(true)}
+              className="flex-1 text-left text-[15px] font-semibold text-slate-900 hover:text-slate-950 hover:underline decoration-slate-200 underline-offset-4 hover:bg-slate-50/80 rounded-md px-1.5 -mx-1.5 cursor-text transition"
+              aria-label="Edit group name"
+            >
+              {bucket.name}
+            </button>
+          )}
         </div>
-
-        <label className="flex items-center gap-1 text-xs text-slate-500">
-          <input
-            type="checkbox"
-            checked={bucket.isEnabled}
-            onChange={() => onToggle(bucket.id)}
-          />
-          <span>Enabled</span>
-        </label>
+        <div className="flex items-center gap-2">
+          <div className="inline-flex rounded-full bg-slate-100 p-0.5">
+            <button
+              type="button"
+              onClick={() => onOperatorWithinChange(bucket.id, "AND")}
+              className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase transition ${
+                bucket.operatorWithin === "AND"
+                  ? "bg-white text-slate-900 shadow"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+              aria-pressed={bucket.operatorWithin === "AND"}
+              aria-label="Set group terms to AND"
+            >
+              AND
+            </button>
+            <button
+              type="button"
+              onClick={() => onOperatorWithinChange(bucket.id, "OR")}
+              className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase transition ${
+                bucket.operatorWithin === "OR"
+                  ? "bg-white text-slate-900 shadow"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+              aria-pressed={bucket.operatorWithin === "OR"}
+              aria-label="Set group terms to OR"
+            >
+              OR
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={() => onToggle(bucket.id)}
+            className={`inline-flex items-center justify-center transition ${
+              bucket.isEnabled
+                ? "text-slate-500 hover:text-slate-700"
+                : "text-slate-400 hover:text-slate-600"
+            }`}
+            aria-pressed={bucket.isEnabled}
+            aria-label={bucket.isEnabled ? "Disable group" : "Enable group"}
+          >
+            <Power className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (canDelete) onDelete(bucket.id);
+            }}
+            disabled={!canDelete}
+            className={`inline-flex items-center justify-center transition ${
+              canDelete
+                ? "text-slate-400 hover:text-red-500"
+                : "text-slate-300 cursor-not-allowed"
+            }`}
+            aria-label="Delete group"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       {/* Terms */}
@@ -95,6 +204,7 @@ const BucketCard = ({
               id={term.id}
               term={term.value}
               colorKey={term.colorKey}
+              pillClassName="bucket-pill"
               onRemove={() => onRemoveTerm(bucket.id, i)}
             />
           ))}
@@ -132,36 +242,6 @@ const BucketCard = ({
           }
         }}
       />
-
-      {/* Operator after this group (if not last) */}
-      {!isLast && (
-        <div className="pt-2 border-t border-dashed border-slate-200">
-          <label className="text-xs text-slate-500">Operator to next group:</label>
-          <select
-            value={bucket.operatorAfter}
-            onChange={(e) =>
-              onOperatorChange(bucket.id, e.target.value as Operator)
-            }
-            className="ml-2 rounded-md border border-slate-200 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <option value="AND">AND</option>
-            <option value="OR">OR</option>
-            <option value="AND NOT">AND NOT</option>
-          </select>
-        </div>
-      )}
-
-      {canDelete && (
-        <div className="text-right">
-          <button
-            type="button"
-            onClick={() => onDelete(bucket.id)}
-            className="inline-flex items-center rounded-full border border-slate-300 px-2 py-0.5 text-[11px] font-medium text-slate-500 hover:text-red-500 hover:border-red-400 transition"
-          >
-            delete
-          </button>
-        </div>
-      )}
     </div>
   );
 };

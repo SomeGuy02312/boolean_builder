@@ -7,6 +7,47 @@ type BooleanPreviewProps = {
   onCopy: () => void;
 };
 
+const tokenizeBoolean = (input: string): Array<string> => {
+  const tokens: string[] = [];
+  const pattern =
+    /"(?:[^"\\]|\\.)*"|\bAND NOT\b|\bAND\b|\bOR\b|\bNOT\b|\(|\)|\s+|[^()\s]+/g;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(input)) !== null) {
+    tokens.push(match[0]);
+  }
+  return tokens;
+};
+
+const renderHighlighted = (input: string) => {
+  const tokens = tokenizeBoolean(input);
+  return tokens.map((token, index) => {
+    if (/^\s+$/.test(token)) return token;
+    if (token === "(" || token === ")") {
+      return (
+        <span key={index} className="text-slate-400">
+          {token}
+        </span>
+      );
+    }
+    if (token === "AND" || token === "OR" || token === "NOT" || token === "AND NOT") {
+      let operatorClass = "text-indigo-600";
+      if (token === "AND") operatorClass = "text-emerald-600";
+      if (token === "OR") operatorClass = "text-blue-600";
+      if (token === "AND NOT" || token === "NOT") operatorClass = "text-rose-600";
+      return (
+        <span key={index} className={`${operatorClass} font-semibold`}>
+          {token}
+        </span>
+      );
+    }
+    return (
+      <span key={index} className="text-slate-900">
+        {token}
+      </span>
+    );
+  });
+};
+
 const BooleanPreview = ({
   booleanString,
   outputMode,
@@ -47,7 +88,9 @@ const BooleanPreview = ({
 
       <div className="rounded-bucket bg-card shadow-soft border border-slate-100 p-4 h-[320px] flex flex-col">
         <pre className="flex-1 overflow-auto text-xs font-mono whitespace-pre-wrap">
-          {booleanString || "/* Start adding terms to see your Boolean here */"}
+          {booleanString
+            ? renderHighlighted(booleanString)
+            : "/* Start adding terms to see your Boolean here */"}
         </pre>
 
         <div className="mt-3 flex justify-end">

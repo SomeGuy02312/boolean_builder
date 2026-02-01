@@ -1,5 +1,5 @@
 import { useMemo, useState, useRef, type ChangeEvent } from "react";
-import { Pencil, Trash } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import type { SavedSearch } from "../lib/savedSearches";
 import { SAVED_SEARCHES_EXPORT_TYPE } from "../lib/savedSearches";
 
@@ -60,11 +60,6 @@ const SavedSearchPanel = ({
       item.name.toLowerCase().includes(query)
     );
   }, [searchTerm, sorted]);
-
-  const startEditingDescription = (item: SavedSearch) => {
-    setEditingDescriptionId(item.id);
-    setDescriptionDraft(item.shortDescription ?? "");
-  };
 
   const startRenaming = (item: SavedSearch) => {
     setEditingId(item.id);
@@ -209,22 +204,24 @@ const SavedSearchPanel = ({
                   if (isRenaming) {
                     return (
                       <li key={item.id}>
-                        <input
-                          type="text"
-                          className="w-full rounded-md border border-slate-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-                          value={editingValue}
-                          autoFocus
-                          onChange={(e) => setEditingValue(e.target.value)}
-                          onBlur={() => handleRenameSubmit(item.id)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              handleRenameSubmit(item.id);
-                            } else if (e.key === "Escape") {
-                              setEditingId(null);
-                              setEditingValue("");
-                            }
-                          }}
-                        />
+                        <div className="w-full rounded-xl border border-slate-100 bg-white/80 px-3 py-2.5 shadow-soft">
+                          <input
+                            type="text"
+                            className="w-full rounded-md border border-slate-200 px-2 py-1 text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                            value={editingValue}
+                            autoFocus
+                            onChange={(e) => setEditingValue(e.target.value)}
+                            onBlur={() => handleRenameSubmit(item.id)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                handleRenameSubmit(item.id);
+                              } else if (e.key === "Escape") {
+                                setEditingId(null);
+                                setEditingValue("");
+                              }
+                            }}
+                          />
+                        </div>
                       </li>
                     );
                   }
@@ -238,27 +235,24 @@ const SavedSearchPanel = ({
                           onOpenSearch(item);
                           onClose();
                         }}
-                        className={`w-full rounded-lg px-3 py-2 text-left border transition-colors ${
+                        className={`w-full rounded-xl px-3 py-2.5 text-left border bg-white/80 shadow-soft transition-all duration-150 hover:shadow-softLg hover:-translate-y-[1px] ${
                           isActive
-                            ? "border-slate-300 bg-slate-50"
-                            : "border-transparent hover:border-slate-200 hover:bg-slate-50"
+                            ? "border-slate-200 bg-white"
+                            : "border-slate-100 hover:border-slate-200 hover:bg-white"
                         }`}
                       >
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2 min-w-0">
-                            <span className="text-sm font-medium truncate text-slate-900">
-                              {item.name}
-                            </span>
                             <button
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 startRenaming(item);
                               }}
-                              className="p-1 text-muted-foreground hover:text-foreground transition"
+                              className="text-sm font-medium truncate text-slate-900 hover:text-slate-950 hover:underline decoration-slate-200 underline-offset-4 hover:bg-slate-50/80 rounded-md px-1.5 -mx-1.5 cursor-text transition"
                               aria-label="Edit name"
                             >
-                              <Pencil className="w-3 h-3" />
+                              {item.name}
                             </button>
                             {(item.isExample ||
                               item.name.trim().endsWith("(Example)")) && (
@@ -273,10 +267,10 @@ const SavedSearchPanel = ({
                               e.stopPropagation();
                               onDelete(item.id);
                             }}
-                            className="p-1 text-muted-foreground hover:text-destructive transition"
+                            className="p-1 text-slate-400 hover:text-red-500 transition"
                             aria-label="Delete search"
                           >
-                            <Trash className="w-3.5 h-3.5" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                         {isEditingDescriptionForThisItem ? (
@@ -310,28 +304,26 @@ const SavedSearchPanel = ({
                           </div>
                         ) : (
                           <div className="mt-0.5">
-                            <div className="inline-flex items-start gap-1.5 max-w-full">
-                              {item.shortDescription ? (
-                                <p className="text-xs text-muted-foreground line-clamp-2 max-w-full">
-                                  {item.shortDescription}
-                                </p>
-                              ) : (
-                                <p className="text-xs italic text-muted-foreground max-w-full">
-                                  Add description
-                                </p>
-                              )}
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  startEditingDescription(item);
-                                }}
-                                className="p-1 text-muted-foreground hover:text-foreground transition"
-                                aria-label="Edit description"
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingDescriptionId(item.id);
+                                setDescriptionDraft(item.shortDescription ?? "");
+                              }}
+                              className="text-left text-xs text-slate-500 hover:text-slate-700 hover:underline decoration-slate-200 underline-offset-4 hover:bg-slate-50/80 rounded-md px-1.5 -mx-1.5 transition"
+                              aria-label="Edit description"
                             >
-                              <Pencil className="w-2.5 h-2.5 -translate-y-px" />
-                              </button>
-                            </div>
+                              {item.shortDescription ? (
+                                <span className="line-clamp-2">
+                                  {item.shortDescription}
+                                </span>
+                              ) : (
+                                <span className="italic text-slate-400">
+                                  Add description
+                                </span>
+                              )}
+                            </button>
                           </div>
                         )}
                         <p className="mt-0.5 text-[11px] text-slate-500/80">

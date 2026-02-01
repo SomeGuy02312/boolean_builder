@@ -8,9 +8,15 @@ import type {
   Operator,
   Term,
   TermColorKey,
+  BucketThemeKey,
+  BucketTermOperator,
 } from "./lib/types";
 import { buildBoolean } from "./lib/booleanBuilder";
 import confetti from "canvas-confetti";
+import {
+  ensureBucketThemeKey,
+  getRandomBucketThemeKey,
+} from "./lib/bucketThemes";
 import HeaderBar from "./components/HeaderBar";
 import BucketsPanel from "./components/BucketsPanel";
 import BooleanPreview from "./components/BooleanPreview";
@@ -50,8 +56,10 @@ const formatLastUsed = (iso?: string) => {
   return `Last used ${date.toLocaleDateString()}`;
 };
 
-type PersistedBucket = Omit<Bucket, "terms"> & {
+type PersistedBucket = Omit<Bucket, "terms" | "themeKey" | "operatorWithin"> & {
   terms: Array<Term | string | null | undefined>;
+  themeKey?: BucketThemeKey;
+  operatorWithin?: BucketTermOperator;
 };
 
 const normalizeTerm = (
@@ -83,28 +91,24 @@ const normalizeTerm = (
 const normalizeBuckets = (rawBuckets: PersistedBucket[]): Bucket[] =>
   rawBuckets.map((bucket) => ({
     ...bucket,
+    themeKey: ensureBucketThemeKey(bucket.themeKey, bucket.id),
+    operatorWithin: bucket.operatorWithin ?? "OR",
     terms: bucket.terms
       .map((term, index) => normalizeTerm(term, index))
       .filter((term) => Boolean(term.value)),
   }));
 
-const DEFAULT_BUCKETS: Bucket[] = [
+const createDefaultBuckets = (): Bucket[] => [
   {
     id: "bucket-1",
     name: "Group 1",
     terms: [],
     isEnabled: true,
+    operatorWithin: "OR",
     operatorAfter: "AND",
+    themeKey: getRandomBucketThemeKey(),
   },
 ];
-
-const cloneBucket = (bucket: Bucket): Bucket => ({
-  ...bucket,
-  terms: bucket.terms.map((term) => ({ ...term })),
-});
-
-const createDefaultBuckets = (): Bucket[] =>
-  DEFAULT_BUCKETS.map((bucket) => cloneBucket(bucket));
 
 function createDefaultBuilderState(): SerializedBuilderState {
   return {
@@ -308,15 +312,18 @@ function App() {
 
   const loadSavedSearch = useCallback(
     (saved: SavedSearch) => {
+      const normalizedBuckets = normalizeBuckets(
+        saved.state.buckets as PersistedBucket[]
+      );
       setBuilderState({
-        buckets: saved.state.buckets,
+        buckets: normalizedBuckets,
         outputMode: saved.state.outputMode,
       });
       setCurrentSavedId(saved.id);
       setCurrentName(saved.name);
       setLastSavedSnapshot(
         JSON.stringify({
-          buckets: saved.state.buckets,
+          buckets: normalizedBuckets,
           outputMode: saved.state.outputMode,
           queryString: saved.queryString,
           name: saved.name.trim(),
@@ -514,6 +521,14 @@ function App() {
     );
   };
 
+  const handleOperatorWithinChange = (bucketId: string, operator: BucketTermOperator) => {
+    updateBuckets((prev) =>
+      prev.map((b) =>
+        b.id === bucketId ? { ...b, operatorWithin: operator } : b
+      )
+    );
+  };
+
   const handleReorderBuckets = (orderedIds: string[]) => {
     updateBuckets((prev) => {
       const idToBucket = new Map(prev.map((b) => [b.id, b]));
@@ -544,6 +559,7 @@ function App() {
             terms: [],
             isEnabled: true,
             operatorAfter: "AND",
+            themeKey: getRandomBucketThemeKey(),
           },
         ];
       }
@@ -563,7 +579,9 @@ function App() {
           name: `Group ${newIndex}`,
           terms: [],
           isEnabled: true,
+          operatorWithin: "OR",
           operatorAfter: "AND",
+          themeKey: getRandomBucketThemeKey(),
         },
       ];
     });
@@ -616,7 +634,7 @@ function App() {
                   key={item.id}
                   type="button"
                   onClick={() => loadSavedSearch(item)}
-                  className="group rounded-xl border border-slate-200 bg-white/80 px-3 py-2.5 text-left shadow-sm hover:shadow-md hover:bg-slate-50 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50"
+                  className="group rounded-xl border border-sky-100 bg-white/80 px-3 py-2.5 text-left shadow-sm hover:shadow-md hover:bg-slate-50 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50"
                 >
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-sm font-medium truncate text-slate-900">
@@ -704,6 +722,7 @@ function App() {
               handleToggleBucket={handleToggleBucket}
               handleRemoveTerm={handleRemoveTerm}
               handleAddTerm={handleAddTerm}
+              handleOperatorWithinChange={handleOperatorWithinChange}
               handleOperatorChange={handleOperatorChange}
               handleReorderBuckets={handleReorderBuckets}
               handleDeleteBucket={handleDeleteBucket}

@@ -1,5 +1,6 @@
 import { useState, type Dispatch, type SetStateAction } from "react";
-import type { Bucket, Operator, TermColorKey } from "../lib/types";
+import type { Bucket, Operator } from "../lib/types";
+import { getBucketTheme } from "../lib/bucketThemes";
 import {
   DndContext,
   type DragEndEvent,
@@ -9,30 +10,21 @@ import {
 } from "@dnd-kit/core";
 import {
   SortableContext,
+  useSortable,
   verticalListSortingStrategy,
   arrayMove,
 } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import BucketCard from "./BucketCard";
 
-const TERM_COLOR_CLASSES: Record<TermColorKey, string> = {
-  lavender: "bg-pill-lavender text-slate-800",
-  blue: "bg-pill-blue text-slate-800",
-  mint: "bg-pill-mint text-slate-800",
-  cyan: "bg-cyan-100 text-cyan-900",
-  teal: "bg-teal-100 text-teal-900",
-  yellow: "bg-yellow-100 text-yellow-900",
-  orange: "bg-orange-100 text-orange-900",
-  red: "bg-red-100 text-red-900",
-  pink: "bg-pink-100 text-pink-900",
-  violet: "bg-violet-100 text-violet-900",
-};
 
 const END_DROP_PREFIX = "term-drop-end::";
 
 type ActiveTerm = {
   id: string;
   value: string;
-  colorKey: TermColorKey;
+  pillBg: string;
+  pillText: string;
 };
 
 type BucketsPanelProps = {
@@ -42,6 +34,7 @@ type BucketsPanelProps = {
   handleToggleBucket: (id: string) => void;
   handleRemoveTerm: (bucketId: string, termIndex: number) => void;
   handleAddTerm: (bucketId: string, term: string) => void;
+  handleOperatorWithinChange: (bucketId: string, operator: "AND" | "OR") => void;
   handleOperatorChange: (bucketId: string, operator: Operator) => void;
   handleReorderBuckets: (orderedIds: string[]) => void;
   handleDeleteBucket: (id: string) => void;
@@ -54,6 +47,83 @@ type BucketsPanelProps = {
   onClear: () => void;
 };
 
+type SortableBucketItemProps = {
+  bucket: Bucket;
+  index: number;
+  isLast: boolean;
+  canDelete: boolean;
+  onNameChange: (id: string, name: string) => void;
+  onToggle: (id: string) => void;
+  onAddTerm: (bucketId: string, term: string) => void;
+  onRemoveTerm: (bucketId: string, termIndex: number) => void;
+  onOperatorWithinChange: (bucketId: string, operator: "AND" | "OR") => void;
+  onOperatorChange: (bucketId: string, operator: Operator) => void;
+  onDelete: (id: string) => void;
+};
+
+const SortableBucketItem = ({
+  bucket,
+  index,
+  isLast,
+  canDelete,
+  onNameChange,
+  onToggle,
+  onAddTerm,
+  onRemoveTerm,
+  onOperatorWithinChange,
+  onOperatorChange,
+  onDelete,
+}: SortableBucketItemProps) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: bucket.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="space-y-3">
+      <BucketCard
+        bucket={bucket}
+        index={index}
+        onNameChange={onNameChange}
+        onToggle={onToggle}
+        onAddTerm={onAddTerm}
+        onRemoveTerm={onRemoveTerm}
+        onOperatorWithinChange={onOperatorWithinChange}
+        onDelete={onDelete}
+        canDelete={canDelete}
+        dragHandleProps={{ attributes, listeners }}
+        isDragging={isDragging}
+      />
+      {!isLast && (
+        <div className="flex items-center gap-3 px-1">
+          <select
+            value={bucket.operatorAfter}
+            onChange={(e) =>
+              onOperatorChange(bucket.id, e.target.value as Operator)
+            }
+            className="rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase text-primary shadow-soft hover:shadow-softLg hover:bg-primary/15 focus:outline-none focus:ring-2 focus:ring-primary"
+            aria-label="Operator to next group"
+          >
+            <option value="AND">AND</option>
+            <option value="OR">OR</option>
+            <option value="AND NOT">AND NOT</option>
+          </select>
+          <div className="h-px flex-1 bg-slate-200/80" aria-hidden="true" />
+        </div>
+      )}
+    </div>
+  );
+};
+
 const BucketsPanel = (props: BucketsPanelProps) => {
   const {
     buckets,
@@ -62,6 +132,7 @@ const BucketsPanel = (props: BucketsPanelProps) => {
     handleToggleBucket,
     handleRemoveTerm,
     handleAddTerm,
+    handleOperatorWithinChange,
     handleOperatorChange,
     handleReorderBuckets,
     handleDeleteBucket,
@@ -176,18 +247,19 @@ const BucketsPanel = (props: BucketsPanelProps) => {
         >
           <div className="space-y-4">
             {buckets.map((bucket, index) => (
-              <BucketCard
+              <SortableBucketItem
                 key={bucket.id}
                 bucket={bucket}
                 index={index}
                 isLast={index === buckets.length - 1}
+                canDelete={buckets.length > 1}
                 onNameChange={handleBucketNameChange}
                 onToggle={handleToggleBucket}
                 onAddTerm={handleAddTerm}
                 onRemoveTerm={handleRemoveTerm}
+                onOperatorWithinChange={handleOperatorWithinChange}
                 onOperatorChange={handleOperatorChange}
                 onDelete={handleDeleteBucket}
-                canDelete={buckets.length > 1}
               />
             ))}
           </div>
@@ -195,7 +267,8 @@ const BucketsPanel = (props: BucketsPanelProps) => {
         <DragOverlay>
           {activeTerm ? (
             <span
-              className={`inline-flex items-center gap-1 rounded-pill px-2.5 py-1 text-xs shadow-softLg ${TERM_COLOR_CLASSES[activeTerm.colorKey]}`}
+              className="inline-flex items-center gap-1 rounded-pill px-2.5 py-1 text-xs shadow-softLg"
+              style={{ backgroundColor: activeTerm.pillBg, color: activeTerm.pillText }}
             >
               {activeTerm.value}
             </span>
@@ -227,10 +300,12 @@ const TermDragMonitor = ({
       if (!bucket) return;
       const term = bucket.terms[termLocation.index];
       if (term) {
+        const theme = getBucketTheme(bucket.themeKey);
         setActiveTerm({
           id: term.id,
           value: term.value,
-          colorKey: term.colorKey,
+          pillBg: theme.pillBg,
+          pillText: theme.pillText,
         });
       }
     },

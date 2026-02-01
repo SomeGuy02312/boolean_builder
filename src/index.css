@@ -9,3 +9,25 @@
       sans-serif;
   }
 }
+
+@layer components {
+  .bucket-card {
+    border-color: var(--bucket-border, #e2e8f0);
+    box-shadow: 0 0 0 2px var(--bucket-halo, rgba(148, 163, 184, 0.18)),
+      0 2px 6px rgba(15, 23, 42, 0.08);
+  }
+
+  .bucket-card:hover {
+    box-shadow: 0 0 0 2px var(--bucket-halo, rgba(148, 163, 184, 0.18)),
+      0 10px 25px var(--bucket-halo, rgba(148, 163, 184, 0.2));
+  }
+
+  .bucket-handle {
+    color: var(--bucket-handle, #94a3b8);
+  }
+
+  .bucket-pill {
+    background-color: var(--bucket-pill-bg, #f1f5f9);
+    color: var(--bucket-pill-text, #1f2937);
+  }
+}

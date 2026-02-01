@@ -3,14 +3,16 @@ type HeaderBarProps = {
 };
 
 const HeaderBar = ({ onOpenHelp }: HeaderBarProps) => {
+  const logoSrc = `${import.meta.env.BASE_URL}purple_squirrel_boolean_logo.jpg`;
+
   return (
     <header className="pb-4 border-b border-slate-200/60">
-      <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-full bg-white shadow-soft flex items-center justify-center overflow-hidden">
+      <div className="flex items-center gap-4">
+        <div className="h-16 w-16 rounded-lg overflow-hidden">
           <img
-            src="/squirrel-logo.png"
+            src={logoSrc}
             alt="Boolean Builder logo"
-            className="h-9 w-9 object-contain"
+            className="h-16 w-16 object-contain"
           />
         </div>
         <div>

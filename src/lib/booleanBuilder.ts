@@ -24,7 +24,7 @@ function formatTerm(raw: string): string {
 /**
  * Build the final Boolean string from buckets + mode.
  * - Filters out disabled or empty buckets
- * - ORs within each bucket
+ * - Uses AND/OR within each bucket
  * - Uses operatorAfter between buckets
  * - No outer parentheses in the final string
  */
@@ -40,7 +40,7 @@ export function buildBoolean(
     return "";
   }
 
-  // Build each bucket's group: (term1 OR term2 OR "multi word")
+  // Build each bucket's group: (term1 OR term2) or (term1 AND term2)
   const groups = activeBuckets.map((bucket) => {
     const formattedTerms = bucket.terms
       .map((term) => formatTerm(term.value))
@@ -48,7 +48,8 @@ export function buildBoolean(
 
     if (formattedTerms.length === 0) return "";
 
-    return `(${formattedTerms.join(" OR ")})`;
+    const operator = bucket.operatorWithin ?? "OR";
+    return `(${formattedTerms.join(` ${operator} `)})`;
   });
 
   // Stitch them together with operators between buckets

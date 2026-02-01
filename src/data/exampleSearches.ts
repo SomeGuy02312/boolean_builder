@@ -6,6 +6,7 @@ import type {
   Term,
   TermColorKey,
 } from "../lib/types";
+import { getStableBucketThemeKey } from "../lib/bucketThemes";
 
 const EXAMPLE_DATE = "2025-01-01T00:00:00.000Z";
 
@@ -39,22 +40,31 @@ const createBucket = (
   name: string,
   terms: string[],
   operatorAfter: Operator = "AND"
-): Bucket => ({
-  id: `example-bucket-${bucketCounter++}`,
-  name,
-  terms: terms.map(createTerm),
-  isEnabled: true,
-  operatorAfter,
-});
+): Bucket => {
+  const id = `example-bucket-${bucketCounter++}`;
+  return {
+    id,
+    name,
+    terms: terms.map(createTerm),
+    isEnabled: true,
+    operatorWithin: "OR",
+    operatorAfter,
+    themeKey: getStableBucketThemeKey(id),
+  };
+};
 
-const createState = (groups: Array<{ name: string; terms: string[] }>): SerializedBuilderState => ({
-  buckets: groups.map((group, index) =>
-    createBucket(
-      group.name,
-      group.terms,
-      index === groups.length - 1 ? "AND" : "AND"
-    )
-  ),
+const isExclusionGroup = (name: string) =>
+  name.trim().toLowerCase().includes("exclusion");
+
+const createState = (
+  groups: Array<{ name: string; terms: string[] }>
+): SerializedBuilderState => ({
+  buckets: groups.map((group, index) => {
+    const nextGroup = groups[index + 1];
+    const operatorAfter =
+      nextGroup && isExclusionGroup(nextGroup.name) ? "AND NOT" : "AND";
+    return createBucket(group.name, group.terms, operatorAfter);
+  }),
   outputMode: "pretty",
 });
 
