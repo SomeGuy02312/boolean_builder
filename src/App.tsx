@@ -558,6 +558,7 @@ function App() {
             name: "Group 1",
             terms: [],
             isEnabled: true,
+            operatorWithin: "OR",
             operatorAfter: "AND",
             themeKey: getRandomBucketThemeKey(),
           },
